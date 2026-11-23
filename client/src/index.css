@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+}
+
+@keyframes bulletin-marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-bulletin {
+  display: flex;
+  width: max-content;
+  animation: bulletin-marquee 38s linear infinite;
+}
+
+.animate-bulletin:hover {
+  animation-play-state: paused;
+}

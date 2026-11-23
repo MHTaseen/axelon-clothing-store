@@ -1,0 +1,14 @@
+{
+  "name": "axelon-mern-store",
+  "version": "1.0.0",
+  "description": "High-Security MERN Stack Clothing Store in Navy Blue & Gold Brown",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "server": "npm run dev --prefix server",
+    "client": "npm run dev --prefix client",
+    "install-all": "npm install && npm install --prefix server && npm install --prefix client"
+  },
+  "dependencies": {
+    "concurrently": "^9.0.1"
+  }
+}
