@@ -88,11 +88,23 @@ Save the output somewhere safe (a password manager). **Back up `ENCRYPTION_MASTE
 - Environment variables: add everything from `server/.env.example` with real values (`NODE_ENV=production`, `PUBLIC_ORIGIN=https://yourdomain.com`, the two secrets, `ADMIN_*`, `SMTP_*`). `ADMIN_PASSWORD` must be strong (8+ characters with upper, lower, digit and symbol).
 - Click **Create**, then **Run NPM Install**, then **Restart**.
 
+**D2. If the domain previously ran WordPress (LiteSpeed hosting):**
+- Replace `public_html/.htaccess` with only the `CLOUDLINUX PASSENGER CONFIGURATION` block, plus a `<FilesMatch "(\.php|\.phtml|\.php8|error_log|\.bk|readme\.html)$"> Require all denied </FilesMatch>` block that disables the old WordPress files. Otherwise WordPress answers `/api/...` requests with 404.
+- Copy `client/dist/assets` and `client/dist/images` into `public_html`. LiteSpeed serves static files from there directly.
+- Whenever you rebuild the client, re-copy those two folders (the file names change on every build).
+
 **E. HTTPS.** In cPanel **SSL/TLS Status**, run **AutoSSL** for the domain. Then in **Domains**, turn on **Force HTTPS Redirect**.
 
 **F. Test.** Open the site and register with a real email; you should receive a code. Sign in as admin, add a product with a photo, place a test order and send a chat message. If the app won't start, open the app's **stderr.log** in the application root. Missing settings are listed there in plain English.
 
 ---
+
+## 3b. Account security features
+- **Everyone** can change their password (Account Settings, the person-with-gear icon next to Sign Out). The current password is required, and all other devices are signed out.
+- **Everyone** can change their email. A 6-digit code is sent to the *new* address, and the old address is notified.
+- **Admin new-device check:** when the admin signs in on a browser that hasn't been verified, a 6-digit code is emailed to the admin address. Verified browsers are remembered for 180 days. Changing the password forgets every other device.
+- Each kind of code (sign-up, reset, admin sign-in, email change) has its own rate limit, so spamming one can't block another.
+- ⚠️ The admin new-device check depends on email delivery. Test that sign-up codes arrive **before** relying on it.
 
 ## 4. Checklist after going live
 - [ ] Change the cPanel password (it was shared in a chat) and enable cPanel **Two-Factor Authentication**.

@@ -788,11 +788,46 @@ class SiteStore {
     return { id: u.id, fullName: u.fullName, email: u.email, phone: u.phone, address: u.address, role: u.role };
   }
 
-  setPasswordHash(user, passwordHash) {
+  setPasswordHash(user, passwordHash, { keepDeviceId = null } = {}) {
     user.passwordHash = passwordHash;
     user.tokenVersion = (user.tokenVersion || 0) + 1; // revokes every existing session
+    // Other devices must verify again by email after a password change
+    user.trustedDevices = (user.trustedDevices || []).filter((d) => keepDeviceId && d.id === keepDeviceId);
     user.updatedAt = new Date().toISOString();
     this.saveDisk();
+  }
+
+  // ---------- Trusted devices (admin new-device email verification) ----------
+  isTrustedDevice(user, deviceId) {
+    if (!deviceId) return false;
+    const d = (user.trustedDevices || []).find((x) => x.id === deviceId);
+    if (!d) return false;
+    d.lastUsedAt = new Date().toISOString();
+    return true;
+  }
+
+  addTrustedDevice(user, userAgent = '') {
+    const id = crypto.randomBytes(24).toString('hex');
+    user.trustedDevices = (user.trustedDevices || []).slice(-19); // keep the 20 most recent devices
+    user.trustedDevices.push({
+      id,
+      label: v.str(userAgent, 160),
+      createdAt: new Date().toISOString(),
+      lastUsedAt: new Date().toISOString()
+    });
+    this.saveDisk();
+    return id;
+  }
+
+  changeEmail(user, newEmail) {
+    const old = user.email;
+    user.email = newEmail;
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
+    user.updatedAt = new Date().toISOString();
+    const t = this.state.threads?.[user.id];
+    if (t) t.clientEmail = newEmail;
+    this.saveDisk();
+    return old;
   }
 
   // ==================== ONE-TIME CODES ====================
@@ -814,9 +849,19 @@ class SiteStore {
   }
 
   // Returns { code } or { error, retryAfterSec }
+  // Each purpose has its own slot + limits, so e.g. password-reset spam can't block admin sign-in codes.
+  otpKey(purpose, email) {
+    return `${purpose}|${email}`;
+  }
+
+  getPendingOtp(purpose, email) {
+    return this.state.pendingOtps[this.otpKey(purpose, email)] || null;
+  }
+
   createOtp(purpose, email, payload = null) {
     const now = Date.now();
-    const prev = this.state.pendingOtps[email];
+    const key = this.otpKey(purpose, email);
+    const prev = this.state.pendingOtps[key];
     let windowStart = now;
     let sends = 0;
     if (prev && now - (prev.windowStart || 0) < 60 * 60 * 1000) {
@@ -830,7 +875,7 @@ class SiteStore {
       }
     }
     const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
-    this.state.pendingOtps[email] = {
+    this.state.pendingOtps[key] = {
       purpose,
       codeHash: this.hashOtp(purpose, email, code),
       expiresAt: now + OTP_TTL_MS,
@@ -847,7 +892,7 @@ class SiteStore {
   // Returns { pending } on success or { error }
   verifyOtp(purpose, email, code) {
     const generic = { error: 'Invalid or expired code. Please check the code or request a new one.' };
-    const pending = this.state.pendingOtps[email];
+    const pending = this.state.pendingOtps[this.otpKey(purpose, email)];
     if (!pending || pending.purpose !== purpose || !pending.codeHash) return generic;
     if (Date.now() > pending.expiresAt || pending.attempts >= OTP_MAX_ATTEMPTS) {
       pending.codeHash = null; // burn the code, keep send counters

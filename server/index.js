@@ -38,6 +38,8 @@ const TMP_DIR = path.join(UPLOADS_DIR, 'tmp');
 fs.mkdirSync(TMP_DIR, { recursive: true, mode: 0o700 });
 
 const COOKIE_NAME = 'axelon_session';
+const DEVICE_COOKIE = 'axelon_device';
+const DEVICE_TTL = 180 * 24 * 60 * 60; // a verified admin device is remembered for 180 days
 const SESSION_TTL = { admin: 12 * 60 * 60, customer: 7 * 24 * 60 * 60 }; // seconds
 const BCRYPT_COST = 12;
 const DUMMY_HASH = bcrypt.hashSync(crypto.randomBytes(16).toString('hex'), BCRYPT_COST);
@@ -199,6 +201,40 @@ function issueSession(res, user) {
   });
 }
 
+// ----- Trusted-device cookie (admin new-device verification) -----
+function setDeviceCookie(res, user, deviceId) {
+  const token = jwt.sign({ sub: user.id, did: deviceId, typ: 'device' }, config.jwtSecret, {
+    algorithm: 'HS256',
+    expiresIn: DEVICE_TTL,
+    issuer: 'axelon'
+  });
+  res.cookie(DEVICE_COOKIE, token, {
+    httpOnly: true,
+    secure: config.cookieSecure,
+    sameSite: 'strict',
+    path: '/api/auth',
+    maxAge: DEVICE_TTL * 1000
+  });
+}
+
+// Returns this browser's trusted-device id for the user, or null.
+function currentDeviceId(req, user) {
+  try {
+    const d = jwt.verify(req.cookies?.[DEVICE_COOKIE] || '', config.jwtSecret, { algorithms: ['HS256'], issuer: 'axelon' });
+    if (d.typ !== 'device' || d.sub !== user.id) return null;
+    return store.isTrustedDevice(user, d.did) ? d.did : null;
+  } catch {
+    return null;
+  }
+}
+
+function deviceLabel(req) {
+  const ua = String(req.get('user-agent') || 'Unknown browser');
+  const os = (ua.match(/Windows NT [\d.]+|Android [\d.]+|iPhone OS [\d_]+|Mac OS X [\d_.]+|Linux/) || ['Unknown OS'])[0].replace(/_/g, '.');
+  const browser = (ua.match(/(Edg|OPR|Chrome|Firefox|Version)\/[\d.]+/) || ['Unknown browser'])[0].replace('Version', 'Safari').replace('Edg', 'Edge');
+  return `${browser} on ${os} — IP ${clientIp(req)} — ${new Date().toUTCString()}`;
+}
+
 function clearSession(res) {
   res.clearCookie(COOKIE_NAME, { httpOnly: true, secure: config.cookieSecure, sameSite: 'lax', path: '/' });
 }
@@ -312,10 +348,109 @@ app.post(
     const ok = await bcrypt.compare(password, user?.passwordHash || DUMMY_HASH);
     if (!user || !ok) return res.status(401).json({ error: 'Invalid email or password.' });
 
+    // Admin signing in from a device that was never verified → email a one-time code first.
+    if (user.role === 'admin' && !currentDeviceId(req, user)) {
+      const otp = store.createOtp('admin-login', user.email, { userId: user.id });
+      if (otp.error) {
+        const p = store.getPendingOtp('admin-login', user.email);
+        const stillValid = p && p.codeHash && Date.now() < p.expiresAt && p.attempts < 5;
+        if (!stillValid) return res.status(429).json({ error: otp.error });
+        return res.json({ needsVerification: true, email: user.email, message: 'Enter the sign-in code we already emailed to you (codes can be re-sent once per minute).' });
+      }
+      try {
+        await mailer.sendLoginCode(user.email, user.fullName, otp.code, deviceLabel(req));
+      } catch (e) {
+        console.error('Mail error:', e.message);
+        return res.status(502).json({ error: 'Could not send the sign-in code email. Please try again in a few minutes.' });
+      }
+      return res.json({
+        needsVerification: true,
+        email: user.email,
+        message: 'New device detected. We emailed a 6-digit sign-in code to the admin email — enter it to continue.'
+      });
+    }
+
     issueSession(res, user);
     res.json({ user: store.publicUser(user) });
   })
 );
+
+// Admin new-device verification: correct code → device is remembered and the session starts.
+app.post('/api/auth/login/verify', otpVerifyLimiter, (req, res) => {
+  const email = v.normEmail(req.body?.email);
+  const result = store.verifyOtp('admin-login', email, req.body?.code);
+  if (result.error) return res.status(400).json({ error: result.error });
+  const user = store.findUserById(result.pending.payload?.userId);
+  if (!user || user.email !== email) return res.status(400).json({ error: 'Invalid or expired code.' });
+  const deviceId = store.addTrustedDevice(user, deviceLabel(req));
+  setDeviceCookie(res, user, deviceId);
+  issueSession(res, user);
+  res.json({ user: store.publicUser(user) });
+});
+
+// ==================== ACCOUNT SETTINGS (signed-in users) ====================
+
+app.post(
+  '/api/auth/change-password',
+  requireAuth,
+  loginIpLimiter,
+  wrap(async (req, res) => {
+    const user = store.findUserById(req.user.id);
+    const current = typeof req.body?.currentPassword === 'string' ? req.body.currentPassword.slice(0, 200) : '';
+    const next = req.body?.newPassword;
+    if (!(await bcrypt.compare(current, user.passwordHash))) return res.status(400).json({ error: 'Your current password is incorrect.' });
+    const pwErr = v.passwordProblem(next);
+    if (pwErr) return res.status(400).json({ error: pwErr });
+    if (await bcrypt.compare(next, user.passwordHash)) return res.status(400).json({ error: 'The new password must be different from the current one.' });
+
+    store.setPasswordHash(user, await bcrypt.hash(next, BCRYPT_COST), { keepDeviceId: currentDeviceId(req, user) });
+    revokeUserSockets(user.id); // signs out every other device
+    issueSession(res, user); // keep this device signed in
+    mailer.sendPasswordChanged(user.email, user.fullName).catch((e) => console.error('Mail error:', e.message));
+    res.json({ success: true, user: store.publicUser(user), message: 'Password changed. All other devices have been signed out.' });
+  })
+);
+
+app.post(
+  '/api/auth/change-email/request',
+  requireAuth,
+  otpSendLimiter,
+  wrap(async (req, res) => {
+    const user = store.findUserById(req.user.id);
+    const newEmail = v.normEmail(req.body?.newEmail);
+    const current = typeof req.body?.currentPassword === 'string' ? req.body.currentPassword.slice(0, 200) : '';
+    if (!v.isEmail(newEmail)) return res.status(400).json({ error: 'Please enter a valid email address.' });
+    if (newEmail === user.email) return res.status(400).json({ error: 'That is already your email address.' });
+    if (!(await bcrypt.compare(current, user.passwordHash))) return res.status(400).json({ error: 'Your current password is incorrect.' });
+    if (store.findUserByEmail(newEmail)) return res.status(409).json({ error: 'This email address is already used by another account.' });
+    if (!(await hasMx(newEmail))) return res.status(400).json({ error: 'That email domain cannot receive mail. Please use a real email address.' });
+
+    const otp = store.createOtp('change-email', newEmail, { userId: user.id });
+    if (otp.error) return res.status(429).json({ error: otp.error });
+    try {
+      await mailer.sendEmailChangeCode(newEmail, user.fullName, otp.code);
+    } catch (e) {
+      console.error('Mail error:', e.message);
+      return res.status(502).json({ error: 'Could not send the confirmation email. Please try again in a few minutes.' });
+    }
+    res.json({ success: true, message: `We sent a 6-digit code to ${newEmail}. Enter it to confirm the change.` });
+  })
+);
+
+app.post('/api/auth/change-email/verify', requireAuth, otpVerifyLimiter, (req, res) => {
+  const user = store.findUserById(req.user.id);
+  const newEmail = v.normEmail(req.body?.newEmail);
+  const result = store.verifyOtp('change-email', newEmail, req.body?.code);
+  if (result.error) return res.status(400).json({ error: result.error });
+  if (result.pending.payload?.userId !== user.id) return res.status(400).json({ error: 'Invalid or expired code.' });
+  if (store.findUserByEmail(newEmail)) return res.status(409).json({ error: 'This email address is already used by another account.' });
+
+  const oldEmail = store.changeEmail(user, newEmail);
+  revokeUserSockets(user.id);
+  issueSession(res, user);
+  mailer.sendEmailChangedNotice(oldEmail, user.fullName, newEmail).catch((e) => console.error('Mail error:', e.message));
+  res.json({ success: true, user: store.publicUser(user), message: 'Email changed successfully.' });
+});
 
 app.post('/api/auth/logout', (req, res) => {
   clearSession(res);

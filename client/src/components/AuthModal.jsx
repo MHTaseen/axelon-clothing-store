@@ -69,11 +69,46 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, noticeMessag
         setError(data.error || 'Invalid email or password.');
         return;
       }
+      if (data.needsVerification) {
+        // Admin signing in from a new device: a code was emailed
+        setInfo(data.message);
+        setOtpCode('');
+        setStep('verify-login');
+        return;
+      }
       onAuthSuccess(data.user);
       setPassword('');
       onClose();
     } catch {
       setError('Network error during sign in.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Admin new-device sign-in: confirm the emailed code
+  const handleVerifyLogin = async (e) => {
+    e.preventDefault();
+    resetMessages();
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/login/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code: otpCode })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || 'Invalid or expired code.');
+        return;
+      }
+      onAuthSuccess(data.user);
+      setPassword('');
+      setOtpCode('');
+      setStep('signin');
+      onClose();
+    } catch {
+      setError('Network error verifying the code.');
     } finally {
       setLoading(false);
     }
@@ -205,6 +240,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, noticeMessag
               {step === 'signin' && 'Sign In'}
               {step === 'register' && 'Create Account'}
               {step === 'verify-register' && 'Verify Your Email'}
+              {step === 'verify-login' && 'New Device Check'}
               {step === 'forgot-email' && 'Reset Password'}
               {step === 'forgot-reset' && 'Set New Password'}
             </h3>
@@ -212,6 +248,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, noticeMessag
               {step === 'signin' && 'Sign in with your verified Email & Password'}
               {step === 'register' && '1 account per unique Email & Phone Number'}
               {step === 'verify-register' && 'Enter the 6-digit code sent to your email'}
+              {step === 'verify-login' && 'Enter the 6-digit sign-in code sent to your email'}
               {step === 'forgot-email' && 'Enter your registered email to receive a reset code'}
               {step === 'forgot-reset' && 'Verify your code and choose a strong new password'}
             </p>
@@ -497,6 +534,45 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, noticeMessag
                 className="inline-flex items-center gap-1 text-xs font-semibold text-navy-600 hover:text-[#0F2557]"
               >
                 <ArrowLeft className="h-3.5 w-3.5" /> Back to Registration Form
+              </button>
+            </form>
+          )}
+
+          {/* ADMIN NEW-DEVICE SIGN-IN CODE */}
+          {step === 'verify-login' && (
+            <form onSubmit={handleVerifyLogin} className="space-y-4">
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-[#0F2557] mb-1">
+                  6-Digit Sign-In Code *
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  required
+                  maxLength={6}
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                  placeholder="Enter 6-digit code"
+                  className="w-full border border-[#0F2557] px-4 py-3 text-center font-mono text-xl font-bold tracking-[0.4em] text-[#0F2557] focus:outline-none"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-[#0F2557] py-3 text-xs font-extrabold uppercase tracking-[0.18em] text-[#F2D5B1] hover:bg-[#060F24] transition"
+              >
+                {loading ? 'Checking Code...' : 'Verify & Sign In'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  resetMessages();
+                  setStep('signin');
+                }}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-navy-600 hover:text-[#0F2557]"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" /> Back to Sign In
               </button>
             </form>
           )}

@@ -73,6 +73,33 @@ module.exports = {
       html: layout('Reset your password', `<p>Hello ${esc(name)},</p><p>Use this code to reset your ${BRAND} password. It expires in <b>10 minutes</b>.</p>${codeBlock(code)}`)
     });
   },
+  async sendLoginCode(to, name, code, device) {
+    await send({
+      to,
+      subject: `${BRAND} — admin sign-in code (new device)`,
+      text: `Hello ${name},\n\nSomeone (hopefully you) is signing in to the ${BRAND} admin account from a new device:\n${device}\n\nYour sign-in code is: ${code}\nIt expires in 10 minutes.\n\nIf this wasn't you, DO NOT share this code — change your admin password immediately.`,
+      html: layout(
+        'New device sign-in',
+        `<p>Hello ${esc(name)},</p><p>Someone is signing in to the ${BRAND} <b>admin account</b> from a new device:</p><p style="font-size:12px;color:#374151;background:#f3f4f6;padding:8px">${esc(device)}</p><p>Enter this code to allow it. It expires in <b>10 minutes</b>.</p>${codeBlock(code)}<p style="color:#b91c1c;font-weight:bold">If this wasn't you, do not share the code and change your admin password right away.</p>`
+      )
+    });
+  },
+  async sendEmailChangeCode(to, name, code) {
+    await send({
+      to,
+      subject: `${BRAND} — confirm your new email address`,
+      text: `Hello ${name},\n\nYour code to confirm this as your new ${BRAND} account email is: ${code}\nIt expires in 10 minutes.`,
+      html: layout('Confirm your new email', `<p>Hello ${esc(name)},</p><p>Enter this code to make this your new ${BRAND} account email. It expires in <b>10 minutes</b>.</p>${codeBlock(code)}`)
+    });
+  },
+  async sendEmailChangedNotice(to, name, newEmail) {
+    await send({
+      to,
+      subject: `${BRAND} — your account email was changed`,
+      text: `Hello ${name},\n\nThe email on your ${BRAND} account was changed to ${newEmail}. If this wasn't you, contact the store immediately.`,
+      html: layout('Account email changed', `<p>Hello ${esc(name)},</p><p>The email on your ${BRAND} account was changed to <b>${esc(newEmail)}</b>.</p><p>If this wasn't you, contact the store immediately.</p>`)
+    });
+  },
   async sendPasswordChanged(to, name) {
     await send({
       to,

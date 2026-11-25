@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   SlidersHorizontal,
   LogOut,
+  UserCog,
   Facebook,
   Instagram,
   Twitter,
@@ -34,6 +35,7 @@ import AuthModal from './components/AuthModal';
 import PublicSearchModal from './components/PublicSearchModal';
 import LocationMapModal from './components/LocationMapModal';
 import { safeHref } from './utils/safeUrl';
+import AccountSettingsModal from './components/AccountSettingsModal';
 
 function ProductTrainSection({ section, onSeeAll, onAddToCart, onTextAdmin }) {
   const scrollRef = useRef(null);
@@ -198,6 +200,8 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const authToken = currentUser ? 'cookie-session' : '';
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [socketNonce, setSocketNonce] = useState(0); // bump to reconnect the socket after session changes
   const [authNotice, setAuthNotice] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeLocationMap, setActiveLocationMap] = useState(null);
@@ -227,6 +231,7 @@ export default function App() {
     setClientEmail('');
     setIsMessengerOpen(false);
     setIsAdminWorkspaceOpen(false);
+    setIsAccountOpen(false);
   };
 
   // Restore the signed-in session (if any) and remove data older versions stored in the browser
@@ -273,6 +278,7 @@ export default function App() {
     isMessengerOpen ||
     isCartOpen ||
     isAuthModalOpen ||
+    isAccountOpen ||
     isSearchOpen ||
     Boolean(activeLocationMap) ||
     Boolean(activePopupSection);
@@ -320,7 +326,7 @@ export default function App() {
     s.on('site:updated', applyBootstrap);
 
     return () => s.disconnect();
-  }, [currentUser?.id]);
+  }, [currentUser?.id, socketNonce]);
 
   // Strict Duplicate-Product Cart Rule:
   // If same product is already in cart, warn the client and do NOT add a duplicate entry;
@@ -520,6 +526,15 @@ export default function App() {
                     <span className="hidden lg:inline-block text-[11px] font-bold text-[#0F2557] max-w-[110px] truncate">
                       {currentUser.fullName}
                     </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsAccountOpen(true)}
+                      title="Account Settings (change password / email)"
+                      aria-label="Account Settings"
+                      className="p-2 rounded-full text-[#0F2557] hover:bg-navy-950/10 transition"
+                    >
+                      <UserCog className="h-[18px] w-[18px] stroke-[2]" />
+                    </button>
                     <button
                       type="button"
                       onClick={handleSignOut}
@@ -897,6 +912,17 @@ export default function App() {
         }}
         onAuthSuccess={handleAuthSuccess}
         noticeMessage={authNotice}
+      />
+
+      {/* Account Settings: change password & email (customers and admin) */}
+      <AccountSettingsModal
+        isOpen={isAccountOpen && Boolean(currentUser)}
+        onClose={() => setIsAccountOpen(false)}
+        currentUser={currentUser}
+        onUserUpdated={(user) => {
+          handleAuthSuccess(user);
+          setSocketNonce((n) => n + 1);
+        }}
       />
 
       {/* Cart & Booking Order Slip Drawer */}
