@@ -1,318 +1,362 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const config = require('../config');
 const { encryptData, decryptData } = require('../security/cryptoVault');
+const v = require('../security/validators');
 
 const VAULT_FILE = path.join(__dirname, 'axelon_vault.enc.json');
+const LEGACY_MEDIA_INDEX = path.join(__dirname, '..', 'uploads', 'media_index.json');
 
-const SiteVaultSchema = new mongoose.Schema({
-  key: { type: String, default: 'main', unique: true },
-  encryptedVault: { type: Object, required: true },
-  updatedAt: { type: Date, default: Date.now }
-});
+// Delivery pricing is decided by the SERVER, never by the browser.
+const DELIVERY_CHARGE = 120;
+const FREE_DELIVERY_OVER = 3000;
+const MAX_QTY_PER_ITEM = 20;
+const MAX_ITEMS_PER_ORDER = 50;
 
-const SiteVaultModel = mongoose.models.SiteVault || mongoose.model('SiteVault', SiteVaultSchema);
+const OTP_TTL_MS = 10 * 60 * 1000;
+const OTP_MAX_ATTEMPTS = 5;
+const OTP_RESEND_COOLDOWN_MS = 60 * 1000;
+const OTP_MAX_SENDS_PER_HOUR = 5;
 
-const DEFAULT_STATE = {
-  config: {
-    theme: {
-      navyDark: '#060F24',
-      navyPrimary: '#0F2557',
-      biscuit: '#DBBB97',
-      goldBrown: '#B8844E'
-    },
-    topAnnouncementBar: {
-      enabled: true,
-      message: 'Welcome to Our New 2026 Collection — Free Express Home Delivery Across Bangladesh on Orders Over TK 3,000'
-    },
-    mainNavbar: {
-      enabled: true,
-      logoUrl: '/images/axelon-logo.png',
-      brandName: 'AXELON',
-      centerButtonLabel: 'Our Collections',
-      showMessageButton: true,
-      showAuthButton: true,
-      showSearchButton: true,
-      showCartButton: true
-    },
-    brandBannerBar: {
-      enabled: true,
-      logoUrl: '/images/axelon-logo.png',
-      brandName: 'AXELON'
-    },
-    newsBulletin: {
-      enabled: true,
-      items: [
-        'New Winter 2026 Luxury Collection is now officially live across Bangladesh',
-        'Free express home delivery on all orders above TK 3,000',
-        'Easy 72-hour size exchange guarantee on every purchase',
-        'Cash on Delivery available nationwide in all 64 districts',
-        'Custom size & tailoring requests available directly through our Admin'
-      ]
-    },
-    footer: {
-      enabled: true,
-      sections: [
-        {
-          id: 'ft-contact',
-          title: 'Contact',
-          content: 'Phone: 01600332120\nEmail: aajmhtaseen@gmail.com'
-        },
-        {
-          id: 'ft-location',
-          title: 'Location',
-          content: '1126, Jhawtola, Cumilla, Bangladesh'
-        },
-        {
-          id: 'ft-about',
-          title: 'About Us',
-          content: 'AXELON is a modern luxury apparel store delivering premium quality fabrics, tailored silhouettes, and direct customer care across Bangladesh.'
-        },
-        {
-          id: 'ft-privacy',
-          title: 'Privacy & Policy',
-          content: 'Your personal details, orders, and messages are protected with end-to-end AES-256-GCM encryption and are never shared with third parties.'
-        }
-      ],
-      linksSectionTitle: 'Links',
-      showLinksSection: true,
-      socialLinks: [
-        { id: 'soc-fb', label: 'Facebook', icon: 'facebook', url: 'https://facebook.com' },
-        { id: 'soc-ig', label: 'Instagram', icon: 'instagram', url: 'https://instagram.com' },
-        { id: 'soc-tw', label: 'Twitter', icon: 'twitter', url: 'https://twitter.com' }
-      ],
-      copyright: '@AXELON All rights Reserved'
-    }
+const CONFIG_KEYS = ['theme', 'topAnnouncementBar', 'mainNavbar', 'brandBannerBar', 'newsBulletin', 'footer'];
+
+const DEFAULT_CONFIG = {
+  theme: { navyDark: '#060F24', navyPrimary: '#0F2557', biscuit: '#DBBB97', goldBrown: '#B8844E' },
+  topAnnouncementBar: {
+    enabled: true,
+    message: 'Welcome to Our New Collection — Free Express Home Delivery Across Bangladesh on Orders Over TK 3,000'
   },
-  // All product sections: "Our Collection" is ALWAYS mandatory and first!
-  sections: [
-    {
-      id: 'sec-collection',
-      name: 'Our Collection',
-      subheading: 'All signature AXELON products across every category',
-      isMandatory: true,
-      showOnHomepage: true,
-      linkedProductIds: [],
-      products: []
-    },
-    {
-      id: 'sec-winter-edit',
-      name: 'Winter & Tailored Edit',
-      subheading: 'Structured silhouettes in Navy Blue, Biscuit & Gold Brown',
-      isMandatory: false,
-      showOnHomepage: true,
-      linkedProductIds: [],
-      products: [
-        {
-          id: 'prod-1',
-          name: 'Royal Navy Double-Breasted Suit',
-          price: 5800,
-          images: [
-            'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=900&q=85',
-            'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=900&q=85'
-          ],
-          fields: [
-            { id: 'f1', label: 'Category', value: 'Suits', visibleToClient: true },
-            { id: 'f2', label: 'Size', value: 'S, M, L, XL', visibleToClient: true },
-            { id: 'f3', label: 'Color', value: 'Navy Blue', visibleToClient: true },
-            { id: 'f4', label: 'Fabric', value: '100% Superfine Wool', visibleToClient: true },
-            { id: 'f5', label: 'Description', value: 'Internal tailor note: full canvas construction with horn buttons.', visibleToClient: false }
-          ]
-        },
-        {
-          id: 'prod-2',
-          name: 'Warm Biscuit Cashmere Trench Coat',
-          price: 4900,
-          images: [
-            'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=900&q=85',
-            'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=900&q=85'
-          ],
-          fields: [
-            { id: 'f1', label: 'Category', value: 'Coats', visibleToClient: true },
-            { id: 'f2', label: 'Size', value: 'XS, S, M, L, XL', visibleToClient: true },
-            { id: 'f3', label: 'Color', value: 'Warm Biscuit', visibleToClient: true },
-            { id: 'f4', label: 'Description', value: 'Water-resistant storm finish.', visibleToClient: false }
-          ]
-        },
-        {
-          id: 'prod-3',
-          name: 'Crisp Ivory Cotton Dress Shirt',
-          price: 1850,
-          images: [
-            'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=900&q=85'
-          ],
-          fields: [
-            { id: 'f1', label: 'Category', value: 'Shirts', visibleToClient: true },
-            { id: 'f2', label: 'Size', value: 'S, M, L, XL, XXL', visibleToClient: true },
-            { id: 'f3', label: 'Color', value: 'Crisp White', visibleToClient: true },
-            { id: 'f4', label: 'Description', value: '2-ply breathable cotton.', visibleToClient: false }
-          ]
-        },
-        {
-          id: 'prod-4',
-          name: 'Navy & Gold-Trim Cable Knit Sweater',
-          price: 3100,
-          images: [
-            'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=900&q=85'
-          ],
-          fields: [
-            { id: 'f1', label: 'Category', value: 'Knitwear', visibleToClient: true },
-            { id: 'f2', label: 'Size', value: 'S, M, L, XL', visibleToClient: true },
-            { id: 'f3', label: 'Color', value: 'Deep Navy', visibleToClient: true },
-            { id: 'f4', label: 'Description', value: 'Heavy 4-ply winter yarn.', visibleToClient: false }
-          ]
-        },
-        {
-          id: 'prod-5',
-          name: 'Tailored Pleated Formal Trousers',
-          price: 2450,
-          images: [
-            'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?auto=format&fit=crop&w=900&q=85'
-          ],
-          fields: [
-            { id: 'f1', label: 'Category', value: 'Trousers', visibleToClient: true },
-            { id: 'f2', label: 'Size', value: '30, 32, 34, 36, 38', visibleToClient: true },
-            { id: 'f3', label: 'Color', value: 'Biscuit / Navy', visibleToClient: true }
-          ]
-        },
-        {
-          id: 'prod-6',
-          name: 'Midnight Navy Winter Overcoat',
-          price: 7200,
-          images: [
-            'https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=900&q=85'
-          ],
-          fields: [
-            { id: 'f1', label: 'Category', value: 'Outerwear', visibleToClient: true },
-            { id: 'f2', label: 'Size', value: 'M, L, XL', visibleToClient: true },
-            { id: 'f3', label: 'Color', value: 'Midnight Navy', visibleToClient: true }
-          ]
-        }
-      ]
-    }
-  ],
-  orders: [],
-  users: [],
-  pendingOtps: {}, // email -> { codeHash, purpose: 'register' | 'reset', expiresAt, payload }
-  adminUser: {
-    id: 'admin-master-1',
-    fullName: process.env.ADMIN_FULL_NAME || 'Mahmudul Hassan Taseen',
-    phone: process.env.ADMIN_PHONE || '01600332120',
-    email: process.env.ADMIN_EMAIL || 'aajmhtaseen@gmail.com',
-    address: process.env.ADMIN_ADDRESS || '1126, Jhawtola, Cumilla',
-    role: 'admin',
-    emailVerified: true,
-    passwordHash: bcrypt.hashSync(process.env.ADMIN_PASSWORD || 'Abc@1234', 12)
+  mainNavbar: {
+    enabled: true,
+    logoUrl: '/images/axelon-logo.png',
+    brandName: 'AXELON',
+    centerButtonLabel: 'Our Collections',
+    showMessageButton: true,
+    showAuthButton: true,
+    showSearchButton: true,
+    showCartButton: true
   },
-  threads: {
-    'client-demo-1': {
-      clientId: 'client-demo-1',
-      clientName: 'Ariful Islam',
-      clientPhone: '01711-000111',
-      clientEmail: 'ariful@example.com',
-      unreadAdmin: 0,
-      unreadClient: 0,
-      updatedAt: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
-      messages: [
-        {
-          id: 'msg-demo-1',
-          threadId: 'client-demo-1',
-          sender: 'admin',
-          senderName: 'AXELON Admin',
-          text: 'Welcome to AXELON Messenger. You can ask about any product or send text, voice notes, images, videos, or PDFs up to 100MB.',
-          attachments: [],
-          inquiredProduct: null,
-          createdAt: new Date(Date.now() - 1000 * 60 * 10).toISOString()
-        }
-      ]
-    }
+  brandBannerBar: { enabled: true, logoUrl: '/images/axelon-logo.png', brandName: 'AXELON' },
+  newsBulletin: {
+    enabled: true,
+    items: [
+      'New Winter Luxury Collection is now officially live across Bangladesh',
+      'Free express home delivery on all orders above TK 3,000',
+      'Easy 72-hour size exchange guarantee on every purchase',
+      'Cash on Delivery available nationwide in all 64 districts',
+      'Custom size & tailoring requests available directly through our Admin'
+    ]
+  },
+  footer: {
+    enabled: true,
+    sections: [
+      { id: 'ft-contact', title: 'Contact', content: 'Phone: (set in Admin Controls)\nEmail: (set in Admin Controls)' },
+      { id: 'ft-location', title: 'Location', content: 'Store address (set in Admin Controls)' },
+      {
+        id: 'ft-about',
+        title: 'About Us',
+        content: 'AXELON is a modern luxury apparel store delivering premium quality fabrics, tailored silhouettes, and direct customer care across Bangladesh.'
+      },
+      {
+        id: 'ft-privacy',
+        title: 'Privacy & Policy',
+        content: 'Your personal details, orders, and messages are sent over HTTPS, stored encrypted at rest (AES-256-GCM), are only visible to you and the store admin, and are never sold or shared with third parties.'
+      }
+    ],
+    linksSectionTitle: 'Links',
+    showLinksSection: true,
+    socialLinks: [
+      { id: 'soc-fb', label: 'Facebook', icon: 'facebook', url: 'https://facebook.com' },
+      { id: 'soc-ig', label: 'Instagram', icon: 'instagram', url: 'https://instagram.com' },
+      { id: 'soc-tw', label: 'Twitter', icon: 'twitter', url: 'https://twitter.com' }
+    ],
+    copyright: '@AXELON All rights Reserved'
   }
 };
 
+const unsplash = (id) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=900&q=85`;
+const DEFAULT_SECTIONS = [
+  {
+    id: 'sec-collection',
+    name: 'Our Collection',
+    subheading: 'All signature AXELON products across every category',
+    isMandatory: true,
+    showOnHomepage: true,
+    linkedProductIds: [],
+    products: []
+  },
+  {
+    id: 'sec-winter-edit',
+    name: 'Winter & Tailored Edit',
+    subheading: 'Structured silhouettes in Navy Blue, Biscuit & Gold Brown',
+    isMandatory: false,
+    showOnHomepage: true,
+    linkedProductIds: [],
+    products: [
+      {
+        id: 'prod-1',
+        name: 'Royal Navy Double-Breasted Suit',
+        price: 5800,
+        images: [unsplash('photo-1594938298603-c8148c4dae35'), unsplash('photo-1507679799987-c73779587ccf')],
+        fields: [
+          { id: 'f1', label: 'Category', value: 'Suits', visibleToClient: true },
+          { id: 'f2', label: 'Size', value: 'S, M, L, XL', visibleToClient: true },
+          { id: 'f3', label: 'Color', value: 'Navy Blue', visibleToClient: true },
+          { id: 'f4', label: 'Fabric', value: '100% Superfine Wool', visibleToClient: true },
+          { id: 'f5', label: 'Description', value: 'Internal tailor note: full canvas construction with horn buttons.', visibleToClient: false }
+        ]
+      },
+      {
+        id: 'prod-2',
+        name: 'Warm Biscuit Cashmere Trench Coat',
+        price: 4900,
+        images: [unsplash('photo-1515886657613-9f3515b0c78f'), unsplash('photo-1539109136881-3be0616acf4b')],
+        fields: [
+          { id: 'f1', label: 'Category', value: 'Coats', visibleToClient: true },
+          { id: 'f2', label: 'Size', value: 'XS, S, M, L, XL', visibleToClient: true },
+          { id: 'f3', label: 'Color', value: 'Warm Biscuit', visibleToClient: true },
+          { id: 'f4', label: 'Description', value: 'Water-resistant storm finish.', visibleToClient: false }
+        ]
+      },
+      {
+        id: 'prod-3',
+        name: 'Crisp Ivory Cotton Dress Shirt',
+        price: 1850,
+        images: [unsplash('photo-1602810318383-e386cc2a3ccf')],
+        fields: [
+          { id: 'f1', label: 'Category', value: 'Shirts', visibleToClient: true },
+          { id: 'f2', label: 'Size', value: 'S, M, L, XL, XXL', visibleToClient: true },
+          { id: 'f3', label: 'Color', value: 'Crisp White', visibleToClient: true },
+          { id: 'f4', label: 'Description', value: '2-ply breathable cotton.', visibleToClient: false }
+        ]
+      },
+      {
+        id: 'prod-4',
+        name: 'Navy & Gold-Trim Cable Knit Sweater',
+        price: 3100,
+        images: [unsplash('photo-1620799140408-edc6dcb6d633')],
+        fields: [
+          { id: 'f1', label: 'Category', value: 'Knitwear', visibleToClient: true },
+          { id: 'f2', label: 'Size', value: 'S, M, L, XL', visibleToClient: true },
+          { id: 'f3', label: 'Color', value: 'Deep Navy', visibleToClient: true },
+          { id: 'f4', label: 'Description', value: 'Heavy 4-ply winter yarn.', visibleToClient: false }
+        ]
+      },
+      {
+        id: 'prod-5',
+        name: 'Tailored Pleated Formal Trousers',
+        price: 2450,
+        images: [unsplash('photo-1594633312681-425c7b97ccd1')],
+        fields: [
+          { id: 'f1', label: 'Category', value: 'Trousers', visibleToClient: true },
+          { id: 'f2', label: 'Size', value: '30, 32, 34, 36, 38', visibleToClient: true },
+          { id: 'f3', label: 'Color', value: 'Biscuit / Navy', visibleToClient: true }
+        ]
+      },
+      {
+        id: 'prod-6',
+        name: 'Midnight Navy Winter Overcoat',
+        price: 7200,
+        images: [unsplash('photo-1544441893-675973e31985')],
+        fields: [
+          { id: 'f1', label: 'Category', value: 'Outerwear', visibleToClient: true },
+          { id: 'f2', label: 'Size', value: 'M, L, XL', visibleToClient: true },
+          { id: 'f3', label: 'Color', value: 'Midnight Navy', visibleToClient: true }
+        ]
+      }
+    ]
+  }
+];
+
+const clone = (o) => JSON.parse(JSON.stringify(o));
+const newId = (prefix) => `${prefix}-${Date.now().toString(36)}-${crypto.randomBytes(6).toString('hex')}`;
+
+// ---------- Deep config sanitiser (admin input) ----------
+function cleanConfigValue(value, key = '', depth = 0) {
+  if (depth > 6) return undefined;
+  if (Array.isArray(value)) {
+    return value.slice(0, 50).map((x) => cleanConfigValue(x, key, depth + 1)).filter((x) => x !== undefined);
+  }
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const k of Object.keys(value).slice(0, 60)) {
+      if (!/^[A-Za-z0-9_-]{1,40}$/.test(k)) continue;
+      const c = cleanConfigValue(value[k], k, depth + 1);
+      if (c !== undefined) out[k] = c;
+    }
+    return out;
+  }
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : undefined;
+  if (typeof value === 'string') {
+    if (/url$/i.test(key)) return v.safeUrl(value, { allowMailTel: true });
+    return v.str(value, 3000);
+  }
+  return undefined;
+}
+
 class SiteStore {
   constructor() {
-    this.state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    this.state = null;
     this.mongoReady = false;
-    this.init();
+    this.vaultExisted = fs.existsSync(VAULT_FILE);
+    this.loadSync();
+    this.migrateLegacyMediaIndex();
+    setInterval(() => this.purgeExpiredOtps(), 5 * 60 * 1000).unref();
   }
 
-  async init() {
-    if (fs.existsSync(VAULT_FILE)) {
-      try {
-        const fileData = JSON.parse(fs.readFileSync(VAULT_FILE, 'utf8'));
-        const decrypted = decryptData(fileData.encryptedVault);
-        if (decrypted) {
-          const parsed = JSON.parse(decrypted);
-          this.state = {
-            ...DEFAULT_STATE,
-            ...parsed,
-            config: { ...DEFAULT_STATE.config, ...(parsed.config || {}) },
-            sections: Array.isArray(parsed.sections) && parsed.sections.length ? parsed.sections : DEFAULT_STATE.sections,
-            users: Array.isArray(parsed.users) ? parsed.users : [],
-            pendingOtps: parsed.pendingOtps || {},
-            adminUser: parsed.adminUser?.email ? parsed.adminUser : DEFAULT_STATE.adminUser
-          };
-          if (this.state.config?.footer?.copyright === '@AXELOn All rights Reserved') {
-            this.state.config.footer.copyright = '@AXELON All rights Reserved';
-            this.saveDisk();
-          }
-          this.ensureMandatoryCollectionFirst();
-        }
-      } catch (e) {
-        console.error('Vault load warning:', e.message);
+  // ==================== PERSISTENCE ====================
+
+  freshState() {
+    const a = config.admin;
+    const pwErr = v.passwordProblem(a.password);
+    if (pwErr) {
+      if (config.isProd) {
+        console.error(`\n❌ ADMIN_PASSWORD is required on first start and must be strong: ${pwErr}\n`);
+        process.exit(1);
       }
-    } else {
+      a.password = crypto.randomBytes(9).toString('base64url') + 'aA1!';
+      console.warn(`[dev] ADMIN_PASSWORD not set/weak. Temporary dev admin: ${a.email} / ${a.password}`);
+    }
+    return {
+      config: clone(DEFAULT_CONFIG),
+      sections: clone(DEFAULT_SECTIONS),
+      orders: [],
+      users: [],
+      threads: {},
+      media: {},
+      pendingOtps: {},
+      adminUser: {
+        id: 'admin-master-1',
+        fullName: a.fullName,
+        phone: v.normPhone(a.phone),
+        email: a.email,
+        address: a.address,
+        role: 'admin',
+        emailVerified: true,
+        tokenVersion: 0,
+        passwordHash: bcrypt.hashSync(a.password, 12),
+        createdAt: new Date().toISOString()
+      }
+    };
+  }
+
+  loadSync() {
+    if (!this.vaultExisted) {
+      this.state = this.freshState();
       this.saveDisk();
+      return;
     }
+    let parsed;
+    try {
+      const fileData = JSON.parse(fs.readFileSync(VAULT_FILE, 'utf8'));
+      parsed = JSON.parse(decryptData(fileData.encryptedVault));
+    } catch (e) {
+      // Never silently start with empty data — that would overwrite (destroy) the real vault.
+      console.error(
+        '\n❌ Could not decrypt the data vault (wrong ENCRYPTION_MASTER_KEY or corrupted file). ' +
+          'Refusing to start so no data is overwritten.\n'
+      );
+      process.exit(1);
+    }
+    this.applyLoaded(parsed);
+  }
 
-    if (process.env.MONGO_URI) {
-      try {
-        await mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 1800 });
-        this.mongoReady = true;
-      } catch {
-        this.mongoReady = false;
+  applyLoaded(parsed) {
+    const base = this.state || {};
+    this.state = {
+      config: { ...clone(DEFAULT_CONFIG), ...(parsed.config || {}) },
+      sections: Array.isArray(parsed.sections) && parsed.sections.length ? parsed.sections : clone(DEFAULT_SECTIONS),
+      orders: Array.isArray(parsed.orders) ? parsed.orders : [],
+      users: Array.isArray(parsed.users) ? parsed.users : [],
+      threads: parsed.threads && typeof parsed.threads === 'object' ? parsed.threads : {},
+      media: parsed.media && typeof parsed.media === 'object' ? parsed.media : base.media || {},
+      pendingOtps: parsed.pendingOtps || {},
+      adminUser: parsed.adminUser?.email ? parsed.adminUser : base.adminUser || this.freshState().adminUser
+    };
+    // Remove the old demo conversation if present
+    delete this.state.threads['client-demo-1'];
+    // Ensure token versions exist (used to revoke sessions)
+    this.state.adminUser.tokenVersion = this.state.adminUser.tokenVersion || 0;
+    this.state.users.forEach((u) => (u.tokenVersion = u.tokenVersion || 0));
+    this.ensureMandatoryCollectionFirst();
+  }
+
+  migrateLegacyMediaIndex() {
+    if (!fs.existsSync(LEGACY_MEDIA_INDEX)) return;
+    try {
+      const legacy = JSON.parse(fs.readFileSync(LEGACY_MEDIA_INDEX, 'utf8'));
+      for (const [id, rec] of Object.entries(legacy)) {
+        if (!this.state.media[id]) {
+          this.state.media[id] = { ...rec, format: 1, purpose: 'legacy', ownerId: 'admin-master-1' };
+        }
       }
+      this.saveDisk();
+      fs.unlinkSync(LEGACY_MEDIA_INDEX);
+    } catch (e) {
+      console.error('Legacy media index migration failed:', e.message);
     }
   }
 
-  ensureMandatoryCollectionFirst() {
-    let colIdx = this.state.sections.findIndex((s) => s.id === 'sec-collection' || s.isMandatory);
-    if (colIdx === -1) {
-      this.state.sections.unshift(JSON.parse(JSON.stringify(DEFAULT_STATE.sections[0])));
-    } else if (colIdx > 0) {
-      const [col] = this.state.sections.splice(colIdx, 1);
-      col.isMandatory = true;
-      this.state.sections.unshift(col);
+  async connectMongo() {
+    if (!config.mongoUri) return;
+    try {
+      const mongoose = require('mongoose');
+      mongoose.set('strictQuery', true);
+      const schema = new mongoose.Schema({
+        key: { type: String, default: 'main', unique: true },
+        encryptedVault: { type: Object, required: true },
+        updatedAt: { type: Date, default: Date.now }
+      });
+      this.Model = mongoose.models.SiteVault || mongoose.model('SiteVault', schema);
+      await mongoose.connect(config.mongoUri, { serverSelectionTimeoutMS: 3000 });
+      this.mongoReady = true;
+      // If the disk vault was missing (e.g. fresh redeploy) restore from the database backup.
+      if (!this.vaultExisted) {
+        const doc = await this.Model.findOne({ key: 'main' }).lean();
+        if (doc?.encryptedVault) {
+          this.applyLoaded(JSON.parse(decryptData(doc.encryptedVault)));
+          this.saveDisk();
+          console.log('Restored data vault from MongoDB backup.');
+        }
+      }
+      this.saveDisk();
+    } catch (e) {
+      this.mongoReady = false;
+      console.warn('MongoDB backup not available:', e.message);
     }
   }
 
   saveDisk() {
     try {
       this.ensureMandatoryCollectionFirst();
-      fs.writeFileSync(
-        VAULT_FILE,
-        JSON.stringify(
-          {
-            cipher: 'AES-256-GCM',
-            updatedAt: new Date().toISOString(),
-            encryptedVault: encryptData(this.state)
-          },
-          null,
-          2
-        ),
-        'utf8'
-      );
-      if (this.mongoReady) {
-        SiteVaultModel.findOneAndUpdate(
-          { key: 'main' },
-          { encryptedVault: encryptData(this.state), updatedAt: new Date() },
-          { upsert: true }
-        ).catch(() => { });
+      const encryptedVault = encryptData(this.state);
+      const tmp = `${VAULT_FILE}.${process.pid}.tmp`;
+      fs.writeFileSync(tmp, JSON.stringify({ cipher: 'AES-256-GCM', updatedAt: new Date().toISOString(), encryptedVault }), {
+        encoding: 'utf8',
+        mode: 0o600
+      });
+      fs.renameSync(tmp, VAULT_FILE); // atomic replace — a crash can't leave a half-written vault
+      if (this.mongoReady && this.Model) {
+        this.Model.findOneAndUpdate({ key: 'main' }, { encryptedVault, updatedAt: new Date() }, { upsert: true }).catch(() => {});
       }
     } catch (err) {
       console.error('Failed to save encrypted vault:', err.message);
+    }
+  }
+
+  // ==================== CATALOG ====================
+
+  ensureMandatoryCollectionFirst() {
+    if (!this.state) return;
+    const colIdx = this.state.sections.findIndex((s) => s.id === 'sec-collection' || s.isMandatory);
+    if (colIdx === -1) this.state.sections.unshift(clone(DEFAULT_SECTIONS[0]));
+    else if (colIdx > 0) {
+      const [col] = this.state.sections.splice(colIdx, 1);
+      col.isMandatory = true;
+      this.state.sections.unshift(col);
     }
   }
 
@@ -320,129 +364,160 @@ class SiteStore {
     const map = new Map();
     (this.state.sections || []).forEach((sec) => {
       (sec.products || []).forEach((p, idx) => {
-        map.set(p.id, {
-          ...p,
-          sourceSectionId: sec.id,
-          sourceSectionName: sec.name,
-          _fallbackOrder: idx
-        });
+        map.set(p.id, { ...p, sourceSectionId: sec.id, sourceSectionName: sec.name, _fallbackOrder: idx });
       });
     });
-    // Sort strictly newest added first -> oldest added last
     return Array.from(map.values()).sort((a, b) => {
-      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      if (timeB !== timeA) return timeB - timeA;
+      const tA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const tB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      if (tB !== tA) return tB - tA;
       return (a._fallbackOrder ?? 0) - (b._fallbackOrder ?? 0);
     });
   }
 
-  getResolvedSections() {
-    this.ensureMandatoryCollectionFirst();
-    const allProducts = this.getAllProductsFlat();
-    const flatMap = new Map();
-    allProducts.forEach((p) => flatMap.set(p.id, p));
+  findProduct(productId) {
+    for (const sec of this.state.sections || []) {
+      const p = (sec.products || []).find((x) => x.id === productId);
+      if (p) return p;
+    }
+    return null;
+  }
 
-    const sortNewestFirst = (list) =>
-      [...list].sort((a, b) => {
-        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return timeB - timeA;
-      });
+  // Public view: hidden (admin-only) fields are removed before leaving the server.
+  publicProduct(p) {
+    if (!p) return null;
+    return { ...p, fields: (p.fields || []).filter((f) => f.visibleToClient !== false) };
+  }
+
+  getResolvedSections({ admin = false } = {}) {
+    this.ensureMandatoryCollectionFirst();
+    const view = (p) => (admin ? p : this.publicProduct(p));
+    const allProducts = this.getAllProductsFlat().map(view);
+    const flatMap = new Map(allProducts.map((p) => [p.id, p]));
+    const newestFirst = (list) =>
+      [...list].sort((a, b) => (b.createdAt ? Date.parse(b.createdAt) : 0) - (a.createdAt ? Date.parse(a.createdAt) : 0));
 
     return this.state.sections.map((sec) => {
-      // Mandatory "Our Collection" displays ALL website products sorted newest -> oldest!
+      const base = { ...sec, products: (sec.products || []).map(view) };
       if (sec.isMandatory || sec.id === 'sec-collection') {
-        return {
-          ...sec,
-          name: sec.name === 'Collection' ? 'Our Collection' : sec.name,
-          showOnHomepage: sec.showOnHomepage !== false,
-          resolvedProducts: allProducts
-        };
+        return { ...base, showOnHomepage: sec.showOnHomepage !== false, resolvedProducts: allProducts };
       }
-
-      const linked = (sec.linkedProductIds || [])
-        .map((id) => flatMap.get(id))
-        .filter(Boolean);
-      const own = sec.products || [];
+      const linked = (sec.linkedProductIds || []).map((id) => flatMap.get(id)).filter(Boolean);
       const seen = new Set();
       const combined = [];
-      [...own, ...linked].forEach((p) => {
+      [...base.products, ...linked].forEach((p) => {
         if (!seen.has(p.id)) {
           seen.add(p.id);
           combined.push(p);
         }
       });
-      return {
-        ...sec,
-        showOnHomepage: sec.showOnHomepage !== false,
-        resolvedProducts: sortNewestFirst(combined)
-      };
+      return { ...base, showOnHomepage: sec.showOnHomepage !== false, resolvedProducts: newestFirst(combined) };
     });
   }
 
-  getBootstrap() {
-    const resolvedSections = this.getResolvedSections();
-    const allProducts = this.getAllProductsFlat();
-    const categoryCount = resolvedSections.filter((s) => !s.isMandatory && s.id !== 'sec-collection').length;
+  getBootstrap({ admin = false } = {}) {
+    const sections = this.getResolvedSections({ admin });
+    const allProducts = this.getAllProductsFlat().map((p) => (admin ? p : this.publicProduct(p)));
     return {
       config: this.state.config,
-      sections: resolvedSections,
+      sections,
       allProducts,
+      delivery: { charge: DELIVERY_CHARGE, freeOver: FREE_DELIVERY_OVER },
       stats: {
-        totalCategories: categoryCount,
+        totalCategories: sections.filter((s) => !s.isMandatory && s.id !== 'sec-collection').length,
         totalProducts: allProducts.length
       }
     };
   }
 
-  updateConfig(updates) {
-    this.state.config = { ...this.state.config, ...updates };
+  publicSearch(q) {
+    const all = this.getAllProductsFlat().map((p) => this.publicProduct(p));
+    const query = v.str(q, 100).toLowerCase();
+    if (!query) return all;
+    return all.filter((p) => {
+      if ((p.name || '').toLowerCase().includes(query)) return true;
+      if ((p.sourceSectionName || '').toLowerCase().includes(query)) return true;
+      return (p.fields || []).some(
+        (f) => !(f.label || '').toLowerCase().includes('description') && `${f.label} ${f.value}`.toLowerCase().includes(query)
+      );
+    });
+  }
+
+  updateConfig(updates = {}) {
+    for (const key of CONFIG_KEYS) {
+      if (updates[key] === undefined || typeof updates[key] !== 'object' || updates[key] === null) continue;
+      const cleaned = cleanConfigValue(updates[key], key);
+      if (key === 'theme') {
+        const theme = { ...this.state.config.theme };
+        for (const [k, val] of Object.entries(cleaned || {})) if (v.isHexColor(val)) theme[k] = val;
+        this.state.config.theme = theme;
+      } else {
+        this.state.config[key] = { ...(this.state.config[key] || {}), ...cleaned };
+      }
+    }
     this.saveDisk();
     return this.state.config;
   }
 
+  cleanProductInput(data, existing = null) {
+    const out = {};
+    if (data.price !== undefined || !existing) {
+      const price = Number(data.price);
+      if (!Number.isFinite(price) || price < 0 || price > 10000000) return { error: 'Price must be a number between 0 and 10,000,000.' };
+      out.price = Math.round(price * 100) / 100;
+    }
+    if (Array.isArray(data.images)) {
+      const imgs = data.images.slice(0, 20).map(v.safeImageUrl).filter(Boolean);
+      out.images = imgs;
+    }
+    if (Array.isArray(data.fields)) {
+      out.fields = data.fields.slice(0, 40).map((f, i) => ({
+        id: /^[A-Za-z0-9_-]{1,60}$/.test(String(f?.id || '')) ? String(f.id) : `f-${Date.now().toString(36)}-${i}`,
+        label: v.str(f?.label, 60) || 'Detail',
+        value: v.str(f?.value, 2000),
+        visibleToClient: f?.visibleToClient === undefined ? true : Boolean(f.visibleToClient)
+      }));
+    }
+    return { data: out };
+  }
+
   addSection({ name, subheading, showOnHomepage = true }) {
-    const cleanName = (name || '').trim();
+    const cleanName = v.str(name, 80);
     if (!cleanName) return { error: 'Category / Section name is required.' };
-    const exists = this.state.sections.some(
-      (s) => (s.name || '').trim().toLowerCase() === cleanName.toLowerCase()
-    );
-    if (exists) {
+    if (this.state.sections.length >= 100) return { error: 'Too many sections.' };
+    if (this.state.sections.some((s) => (s.name || '').trim().toLowerCase() === cleanName.toLowerCase())) {
       return { error: `Category "${cleanName}" already exists. Duplicate categories cannot be added twice.` };
     }
-
-    const newSec = {
-      id: 'sec-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5),
+    const sec = {
+      id: newId('sec'),
       name: cleanName,
-      subheading: (subheading || '').trim(),
+      subheading: v.str(subheading, 200),
       isMandatory: false,
       showOnHomepage: Boolean(showOnHomepage),
       linkedProductIds: [],
       products: []
     };
-    this.state.sections.push(newSec);
+    this.state.sections.push(sec);
     this.saveDisk();
-    return { section: newSec };
+    return { section: sec };
   }
 
-  updateSection(sectionId, updates) {
+  updateSection(sectionId, updates = {}) {
     const sec = this.state.sections.find((s) => s.id === sectionId);
     if (!sec) return { error: 'Section not found' };
     if (updates.name !== undefined) {
-      const cleanName = String(updates.name).trim();
+      const cleanName = v.str(updates.name, 80);
       if (!cleanName) return { error: 'Section name cannot be empty.' };
-      const duplicate = this.state.sections.some(
-        (s) => s.id !== sectionId && (s.name || '').trim().toLowerCase() === cleanName.toLowerCase()
-      );
-      if (duplicate) {
+      if (this.state.sections.some((s) => s.id !== sectionId && (s.name || '').trim().toLowerCase() === cleanName.toLowerCase())) {
         return { error: `Category "${cleanName}" already exists. Duplicate categories are not allowed.` };
       }
       sec.name = cleanName;
     }
-    if (updates.subheading !== undefined) sec.subheading = String(updates.subheading).trim();
+    if (updates.subheading !== undefined) sec.subheading = v.str(updates.subheading, 200);
     if (updates.showOnHomepage !== undefined) sec.showOnHomepage = Boolean(updates.showOnHomepage);
-    if (Array.isArray(updates.linkedProductIds)) sec.linkedProductIds = updates.linkedProductIds;
+    if (Array.isArray(updates.linkedProductIds)) {
+      sec.linkedProductIds = [...new Set(updates.linkedProductIds.map(String))].filter((id) => this.findProduct(id)).slice(0, 1000);
+    }
     this.saveDisk();
     return { section: sec };
   }
@@ -453,138 +528,178 @@ class SiteStore {
     if (this.state.sections[idx].isMandatory || sectionId === 'sec-collection') {
       return { error: 'The mandatory "Our Collection" section cannot be deleted.' };
     }
-    this.state.sections.splice(idx, 1);
+    const [removed] = this.state.sections.splice(idx, 1);
     this.saveDisk();
-    return { success: true };
+    return { success: true, mediaIdsToPurge: (removed.products || []).flatMap((p) => this.mediaIdsFromImages(p.images)) };
   }
 
-  addProductToSection(sectionId, productData) {
+  addProductToSection(sectionId, productData = {}) {
     const sec = this.state.sections.find((s) => s.id === sectionId);
     if (!sec) return { error: 'Section not found' };
-    const cleanName = (productData.name || '').trim();
+    const cleanName = v.str(productData.name, 150);
     if (!cleanName) return { error: 'Product name is required.' };
-
-    const all = this.getAllProductsFlat();
-    if (all.some((p) => (p.name || '').trim().toLowerCase() === cleanName.toLowerCase())) {
+    if (this.getAllProductsFlat().some((p) => (p.name || '').trim().toLowerCase() === cleanName.toLowerCase())) {
       return { error: `Product "${cleanName}" already exists. Duplicate products cannot be added twice.` };
     }
-
-    const newProd = {
-      id: 'prod-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5),
+    const c = this.cleanProductInput(productData);
+    if (c.error) return c;
+    const prod = {
+      id: newId('prod'),
       name: cleanName,
-      price: Number(productData.price) || 0,
-      images: Array.isArray(productData.images) && productData.images.length
-        ? productData.images
-        : ['https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=900&q=85'],
-      fields: Array.isArray(productData.fields)
-        ? productData.fields.map((f, i) => ({
-          id: f.id || `f-${Date.now()}-${i}`,
-          label: (f.label || 'Detail').trim(),
-          value: String(f.value ?? '').trim(),
-          visibleToClient: Boolean(f.visibleToClient ?? true)
-        }))
-        : [],
+      price: c.data.price,
+      images: c.data.images?.length ? c.data.images : [unsplash('photo-1594938298603-c8148c4dae35')],
+      fields: c.data.fields || [],
       createdAt: new Date().toISOString()
     };
-    sec.products.unshift(newProd);
+    sec.products.unshift(prod);
     this.saveDisk();
-    return { product: newProd };
+    return { product: prod };
   }
 
-  updateProductInSection(sectionId, productId, updates) {
+  updateProductInSection(sectionId, productId, updates = {}) {
     const sec = this.state.sections.find((s) => s.id === sectionId);
     if (!sec) return { error: 'Section not found' };
     const idx = sec.products.findIndex((p) => p.id === productId);
     if (idx === -1) return { error: 'Product not found' };
+    const current = sec.products[idx];
 
+    let name = current.name;
     if (updates.name !== undefined) {
-      const cleanName = String(updates.name).trim();
-      const all = this.getAllProductsFlat();
-      if (all.some((p) => p.id !== productId && (p.name || '').trim().toLowerCase() === cleanName.toLowerCase())) {
-        return { error: `Product "${cleanName}" already exists. Duplicate products are not allowed.` };
+      name = v.str(updates.name, 150);
+      if (!name) return { error: 'Product name cannot be empty.' };
+      if (this.getAllProductsFlat().some((p) => p.id !== productId && (p.name || '').trim().toLowerCase() === name.toLowerCase())) {
+        return { error: `Product "${name}" already exists. Duplicate products are not allowed.` };
       }
-      sec.products[idx].name = cleanName;
     }
-
-    sec.products[idx] = {
-      ...sec.products[idx],
-      price: updates.price !== undefined ? Number(updates.price) : sec.products[idx].price,
-      images: Array.isArray(updates.images) ? updates.images : sec.products[idx].images,
-      fields: Array.isArray(updates.fields) ? updates.fields : sec.products[idx].fields
-    };
+    const c = this.cleanProductInput(updates, current);
+    if (c.error) return c;
+    const removedImages = c.data.images ? (current.images || []).filter((u) => !c.data.images.includes(u)) : [];
+    sec.products[idx] = { ...current, name, ...c.data, updatedAt: new Date().toISOString() };
     this.saveDisk();
-    return { product: sec.products[idx] };
+    return { product: sec.products[idx], mediaIdsToPurge: this.mediaIdsFromImages(removedImages) };
   }
 
-  deleteProductFromSection(sectionId, productId) {
-    let removedProduct = null;
+  mediaIdsFromImages(images = []) {
+    return (images || [])
+      .map((url) => (String(url).match(/^\/api\/media\/stream\/([a-z0-9-]+)$/) || [])[1])
+      .filter((id) => id && v.MEDIA_ID_RE.test(id));
+  }
+
+  deleteProduct(productId) {
+    let removed = null;
     this.state.sections.forEach((s) => {
       const found = (s.products || []).find((p) => p.id === productId);
-      if (found) removedProduct = found;
+      if (found) removed = found;
       s.products = (s.products || []).filter((p) => p.id !== productId);
-      if (Array.isArray(s.linkedProductIds)) {
-        s.linkedProductIds = s.linkedProductIds.filter((id) => id !== productId);
-      }
+      if (Array.isArray(s.linkedProductIds)) s.linkedProductIds = s.linkedProductIds.filter((id) => id !== productId);
     });
-    if (!removedProduct) return null;
-
-    // Extract any local encrypted media IDs (/api/media/stream/<fileId>) so disk files are also permanently deleted
-    const mediaIdsToPurge = (removedProduct.images || [])
-      .map((url) => {
-        const match = String(url).match(/\/api\/media\/stream\/([a-zA-Z0-9_-]+)/);
-        return match ? match[1] : null;
-      })
-      .filter(Boolean);
-
+    if (!removed) return null;
     this.saveDisk();
-    return { removedProduct, mediaIdsToPurge };
+    return { removedProduct: removed, mediaIdsToPurge: this.mediaIdsFromImages(removed.images) };
   }
 
-  createOrder(orderPayload) {
+  // ==================== ORDERS (server-side pricing) ====================
+
+  createOrder(user, body = {}) {
+    const items = Array.isArray(body.items) ? body.items : [];
+    if (items.length === 0) return { error: 'Your cart is empty.' };
+    if (items.length > MAX_ITEMS_PER_ORDER) return { error: 'Too many items in one order.' };
+
+    const name = v.str(body.client?.name, 80) || user.fullName;
+    const phone = v.normPhone(body.client?.phone || user.phone);
+    const address = v.str(body.client?.address, 300);
+    const notes = v.str(body.client?.notes, 500);
+    if (!v.isPhone(phone)) return { error: 'Please enter a valid Bangladeshi mobile number (e.g. 01XXXXXXXXX).' };
+    if (address.length < 5) return { error: 'Please enter your full delivery address.' };
+
+    const seen = new Set();
+    const lines = [];
+    for (const it of items) {
+      const productId = String(it?.id || it?.productId || '');
+      if (seen.has(productId)) continue;
+      seen.add(productId);
+      const product = this.findProduct(productId);
+      if (!product) return { error: 'One of the products in your cart is no longer available. Please refresh and try again.' };
+      const qty = Math.floor(Number(it.quantity));
+      if (!Number.isFinite(qty) || qty < 1 || qty > MAX_QTY_PER_ITEM) {
+        return { error: `Quantity for "${product.name}" must be between 1 and ${MAX_QTY_PER_ITEM}.` };
+      }
+      lines.push({
+        id: product.id,
+        name: product.name,
+        price: Number(product.price) || 0, // price from the catalog — never from the browser
+        image: product.images?.[0] || '',
+        quantity: qty
+      });
+    }
+    const subtotal = lines.reduce((s, l) => s + l.price * l.quantity, 0);
+    const deliveryCharge = subtotal === 0 || subtotal >= FREE_DELIVERY_OVER ? 0 : DELIVERY_CHARGE;
+    let id;
+    do id = 'AX-ORD-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+    while (this.state.orders.some((o) => o.id === id));
+
     const order = {
-      id: 'AX-ORD-' + Math.floor(100000 + Math.random() * 900000),
-      clientId: orderPayload.clientId,
-      client: {
-        name: orderPayload.client?.name || 'Customer',
-        phone: orderPayload.client?.phone || '',
-        email: orderPayload.client?.email || '',
-        address: orderPayload.client?.address || '',
-        notes: orderPayload.client?.notes || ''
-      },
-      encryptedClientRecord: encryptData(orderPayload.client || {}),
-      items: orderPayload.items || [],
-      subtotal: Number(orderPayload.subtotal) || 0,
-      deliveryCharge: Number(orderPayload.deliveryCharge) || 0,
-      totalAmount: Number(orderPayload.totalAmount) || 0,
+      id,
+      clientId: user.id,
+      client: { name, phone, email: user.email, address, notes },
+      items: lines,
+      subtotal,
+      deliveryCharge,
+      totalAmount: subtotal + deliveryCharge,
       status: 'Booking Received',
       createdAt: new Date().toISOString()
     };
     this.state.orders.unshift(order);
     this.saveDisk();
-    return order;
+    return { order };
   }
 
   getOrders() {
     return this.state.orders || [];
   }
 
+  // ==================== MEDIA INDEX ====================
+
+  addMedia(record) {
+    this.state.media[record.id] = record;
+    this.saveDisk();
+  }
+
+  getMedia(id) {
+    return v.MEDIA_ID_RE.test(String(id)) ? this.state.media[id] || null : null;
+  }
+
+  removeMedia(ids = []) {
+    const removed = [];
+    ids.forEach((id) => {
+      if (this.getMedia(id)) {
+        delete this.state.media[id];
+        removed.push(id);
+      }
+    });
+    if (removed.length) this.saveDisk();
+    return removed;
+  }
+
+  // ==================== CHAT ====================
+
   ensureThread(clientId, clientName = 'Customer', clientPhone = '', clientEmail = '') {
     if (!this.state.threads[clientId]) {
       this.state.threads[clientId] = {
         clientId,
-        clientName: clientName || 'Customer',
-        clientPhone: clientPhone || '',
-        clientEmail: clientEmail || '',
+        clientName: v.str(clientName, 80) || 'Customer',
+        clientPhone: v.str(clientPhone, 30),
+        clientEmail: v.str(clientEmail, 254),
         unreadAdmin: 0,
         unreadClient: 0,
         updatedAt: new Date().toISOString(),
         messages: [
           {
-            id: 'msg-welcome-' + Date.now(),
+            id: newId('msg'),
             threadId: clientId,
             sender: 'admin',
             senderName: 'AXELON Admin',
-            text: `Hello ${clientName || 'there'}! Welcome to AXELON Messenger. Send text, audio, video, photos, or PDFs (up to 100MB) anytime.`,
+            text: `Hello ${v.str(clientName, 80) || 'there'}! Welcome to AXELON Messenger. Send text, audio, video, photos, or PDFs anytime.`,
             attachments: [],
             inquiredProduct: null,
             createdAt: new Date().toISOString()
@@ -592,29 +707,29 @@ class SiteStore {
         ]
       };
       this.saveDisk();
-    } else {
-      const t = this.state.threads[clientId];
-      if (clientName && clientName !== 'Customer') t.clientName = clientName;
-      if (clientPhone) t.clientPhone = clientPhone;
-      if (clientEmail) t.clientEmail = clientEmail;
     }
     return this.state.threads[clientId];
   }
 
-  addMessage({ clientId, clientName, clientPhone, clientEmail, sender, senderName, text, attachments = [], inquiredProduct = null }) {
-    const thread = this.ensureThread(clientId, clientName, clientPhone, clientEmail);
+  getThread(clientId) {
+    return this.state.threads?.[clientId] || null;
+  }
+
+  addMessage({ clientId, sender, senderName, text, attachments = [], inquiredProduct = null }) {
+    const thread = this.state.threads[clientId];
+    if (!thread) return null;
     const msg = {
-      id: 'msg-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+      id: newId('msg'),
       threadId: clientId,
       sender: sender === 'admin' ? 'admin' : 'client',
-      senderName: senderName || (sender === 'admin' ? 'AXELON Admin' : thread.clientName),
-      text: text || '',
-      encryptedBody: encryptData({ text: text || '', attachmentsCount: attachments.length }),
+      senderName: v.str(senderName, 80) || (sender === 'admin' ? 'AXELON Admin' : thread.clientName),
+      text: v.str(text, 4000),
       attachments,
       inquiredProduct,
       createdAt: new Date().toISOString()
     };
     thread.messages.push(msg);
+    if (thread.messages.length > 2000) thread.messages.splice(0, thread.messages.length - 2000);
     thread.updatedAt = msg.createdAt;
     if (msg.sender === 'client') thread.unreadAdmin = (thread.unreadAdmin || 0) + 1;
     else thread.unreadClient = (thread.unreadClient || 0) + 1;
@@ -623,212 +738,158 @@ class SiteStore {
   }
 
   getAllThreads() {
-    return Object.values(this.state.threads || {}).sort(
-      (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
-    );
+    return Object.values(this.state.threads || {}).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
   }
 
   deleteMessage(clientId, messageId) {
-    const thread = this.state.threads?.[clientId];
+    const thread = this.getThread(clientId);
     if (!thread) return null;
     const idx = (thread.messages || []).findIndex((m) => m.id === messageId);
     if (idx === -1) return null;
-
     const [removed] = thread.messages.splice(idx, 1);
-    const removedAttachmentIds = (removed.attachments || []).map((a) => a.id).filter(Boolean);
-    thread.updatedAt = thread.messages.length
-      ? thread.messages[thread.messages.length - 1].createdAt
-      : new Date().toISOString();
-
+    thread.updatedAt = thread.messages.length ? thread.messages[thread.messages.length - 1].createdAt : new Date().toISOString();
     this.saveDisk();
-    return { thread, removedAttachmentIds };
+    return { thread, removedAttachmentIds: (removed.attachments || []).map((a) => a.id).filter(Boolean) };
   }
 
   deleteThread(clientId) {
-    const thread = this.state.threads?.[clientId];
+    const thread = this.getThread(clientId);
     if (!thread) return null;
-
-    const removedAttachmentIds = [];
-    (thread.messages || []).forEach((m) => {
-      (m.attachments || []).forEach((a) => {
-        if (a.id) removedAttachmentIds.push(a.id);
-      });
-    });
-
+    const removedAttachmentIds = (thread.messages || []).flatMap((m) => (m.attachments || []).map((a) => a.id)).filter(Boolean);
     delete this.state.threads[clientId];
     this.saveDisk();
     return { removedAttachmentIds };
   }
 
-  // ==================== AUTHENTICATION, EMAIL OTP VERIFICATION & PASSWORD RESET ====================
+  // ==================== USERS ====================
 
-  validatePasswordStrength(password = '') {
-    if (typeof password !== 'string' || password.length < 8) {
-      return 'Password must be at least 8 characters long.';
-    }
-    if (!/[a-z]/.test(password)) return 'Password must include at least one lowercase letter (a-z).';
-    if (!/[A-Z]/.test(password)) return 'Password must include at least one uppercase letter (A-Z).';
-    if (!/[0-9]/.test(password)) return 'Password must include at least one digit (0-9).';
-    if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(password)) {
-      return 'Password must include at least one special character (e.g. !, @, ), #, $).';
-    }
-    return null;
+  findUserById(id) {
+    if (!id) return null;
+    if (this.state.adminUser?.id === id) return this.state.adminUser;
+    return (this.state.users || []).find((u) => u.id === id) || null;
   }
 
-  normalizePhone(phone = '') {
-    return String(phone).replace(/[\s\-()]/g, '').trim();
-  }
-
-  findUserByEmail(email = '') {
-    const norm = String(email).toLowerCase().trim();
+  findUserByEmail(email) {
+    const norm = v.normEmail(email);
     if (!norm) return null;
-    if (this.state.adminUser?.email?.toLowerCase() === norm) {
-      return this.state.adminUser;
-    }
+    if (this.state.adminUser?.email?.toLowerCase() === norm) return this.state.adminUser;
     return (this.state.users || []).find((u) => u.email.toLowerCase() === norm) || null;
   }
 
-  findUserByPhone(phone = '') {
-    const norm = this.normalizePhone(phone);
+  findUserByPhone(phone) {
+    const norm = v.normPhone(phone).replace(/^\+?88/, '');
     if (!norm) return null;
-    if (this.normalizePhone(this.state.adminUser?.phone) === norm) {
-      return this.state.adminUser;
-    }
-    return (this.state.users || []).find((u) => this.normalizePhone(u.phone) === norm) || null;
+    const same = (p) => v.normPhone(p).replace(/^\+?88/, '') === norm;
+    if (same(this.state.adminUser?.phone)) return this.state.adminUser;
+    return (this.state.users || []).find((u) => same(u.phone)) || null;
   }
 
-  createRegistrationOtp({ fullName, email, phone, address, password }) {
-    const normEmail = String(email || '').toLowerCase().trim();
-    const normPhone = this.normalizePhone(phone);
+  publicUser(u) {
+    return { id: u.id, fullName: u.fullName, email: u.email, phone: u.phone, address: u.address, role: u.role };
+  }
 
-    if (!fullName?.trim() || !normEmail || !normPhone || !address?.trim() || !password) {
-      return { error: 'All fields (Full Name, Email, Phone Number, Address, Password) are required.' };
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(normEmail)) {
-      return { error: 'Please provide a valid email address.' };
-    }
-    const pwErr = this.validatePasswordStrength(password);
-    if (pwErr) return { error: pwErr };
+  setPasswordHash(user, passwordHash) {
+    user.passwordHash = passwordHash;
+    user.tokenVersion = (user.tokenVersion || 0) + 1; // revokes every existing session
+    user.updatedAt = new Date().toISOString();
+    this.saveDisk();
+  }
 
-    if (this.findUserByEmail(normEmail)) {
-      return { error: 'An account with this email address already exists. Only 1 account is allowed per email.' };
-    }
-    if (this.findUserByPhone(normPhone)) {
-      return { error: 'An account with this phone number already exists. Only 1 account is allowed per phone number.' };
-    }
+  // ==================== ONE-TIME CODES ====================
 
-    const code = String(crypto.randomInt(100000, 999999));
-    if (!this.state.pendingOtps) this.state.pendingOtps = {};
-    this.state.pendingOtps[normEmail] = {
-      purpose: 'register',
-      codeHash: crypto.createHash('sha256').update(code).digest('hex'),
-      expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
-      payload: {
-        fullName: fullName.trim(),
-        email: normEmail,
-        phone: normPhone,
-        address: address.trim(),
-        passwordHash: bcrypt.hashSync(password, 12)
+  hashOtp(purpose, email, code) {
+    return crypto.createHmac('sha256', config.otpPepper).update(`${purpose}:${email}:${code}`).digest('hex');
+  }
+
+  purgeExpiredOtps() {
+    const now = Date.now();
+    let changed = false;
+    for (const [email, p] of Object.entries(this.state.pendingOtps || {})) {
+      if (now > (p.expiresAt || 0) && now - (p.windowStart || 0) > 60 * 60 * 1000) {
+        delete this.state.pendingOtps[email];
+        changed = true;
       }
+    }
+    if (changed) this.saveDisk();
+  }
+
+  // Returns { code } or { error, retryAfterSec }
+  createOtp(purpose, email, payload = null) {
+    const now = Date.now();
+    const prev = this.state.pendingOtps[email];
+    let windowStart = now;
+    let sends = 0;
+    if (prev && now - (prev.windowStart || 0) < 60 * 60 * 1000) {
+      windowStart = prev.windowStart;
+      sends = prev.sends || 0;
+      if (now - (prev.lastSentAt || 0) < OTP_RESEND_COOLDOWN_MS) {
+        return { error: 'Please wait a minute before requesting another code.', retryAfterSec: 60 };
+      }
+      if (sends >= OTP_MAX_SENDS_PER_HOUR) {
+        return { error: 'Too many codes requested for this email. Please try again in an hour.', retryAfterSec: 3600 };
+      }
+    }
+    const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+    this.state.pendingOtps[email] = {
+      purpose,
+      codeHash: this.hashOtp(purpose, email, code),
+      expiresAt: now + OTP_TTL_MS,
+      attempts: 0,
+      sends: sends + 1,
+      windowStart,
+      lastSentAt: now,
+      payload
     };
     this.saveDisk();
-    return { email: normEmail, verificationCode: code };
+    return { code };
   }
 
-  verifyRegistrationOtp(email, code) {
-    const normEmail = String(email || '').toLowerCase().trim();
-    const pending = this.state.pendingOtps?.[normEmail];
-    if (!pending || pending.purpose !== 'register') {
-      return { error: 'No pending email verification found. Please request a new code.' };
-    }
-    if (Date.now() > pending.expiresAt) {
-      delete this.state.pendingOtps[normEmail];
+  // Returns { pending } on success or { error }
+  verifyOtp(purpose, email, code) {
+    const generic = { error: 'Invalid or expired code. Please check the code or request a new one.' };
+    const pending = this.state.pendingOtps[email];
+    if (!pending || pending.purpose !== purpose || !pending.codeHash) return generic;
+    if (Date.now() > pending.expiresAt || pending.attempts >= OTP_MAX_ATTEMPTS) {
+      pending.codeHash = null; // burn the code, keep send counters
       this.saveDisk();
-      return { error: 'Verification code expired. Please register again.' };
+      return generic;
     }
-    const providedHash = crypto.createHash('sha256').update(String(code || '').trim()).digest('hex');
-    if (providedHash !== pending.codeHash) {
-      return { error: 'Invalid verification code. Please check and try again.' };
-    }
-
-    // Re-check uniqueness before finalizing
-    if (this.findUserByEmail(normEmail) || this.findUserByPhone(pending.payload.phone)) {
-      delete this.state.pendingOtps[normEmail];
+    const provided = Buffer.from(this.hashOtp(purpose, email, String(code || '').trim()), 'hex');
+    const expected = Buffer.from(pending.codeHash, 'hex');
+    if (provided.length !== expected.length || !crypto.timingSafeEqual(provided, expected)) {
+      pending.attempts += 1;
+      if (pending.attempts >= OTP_MAX_ATTEMPTS) pending.codeHash = null;
       this.saveDisk();
-      return { error: 'An account with this email or phone number already exists.' };
+      return pending.attempts >= OTP_MAX_ATTEMPTS
+        ? { error: 'Too many wrong attempts. Please request a new code.' }
+        : generic;
     }
+    const result = { pending: { ...pending } };
+    pending.codeHash = null; // single use
+    pending.payload = null;
+    this.saveDisk();
+    return result;
+  }
 
-    const newUser = {
-      id: 'user-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-      fullName: pending.payload.fullName,
-      email: normEmail,
-      phone: pending.payload.phone,
-      address: pending.payload.address,
+  createUserFromPending(payload) {
+    const user = {
+      id: newId('user'),
+      fullName: payload.fullName,
+      email: payload.email,
+      phone: payload.phone,
+      address: payload.address,
       role: 'customer',
       emailVerified: true,
-      passwordHash: pending.payload.passwordHash,
-      encryptedProfile: encryptData({
-        fullName: pending.payload.fullName,
-        email: normEmail,
-        phone: pending.payload.phone,
-        address: pending.payload.address
-      }),
+      tokenVersion: 0,
+      passwordHash: payload.passwordHash,
       createdAt: new Date().toISOString()
     };
-
-    if (!Array.isArray(this.state.users)) this.state.users = [];
-    this.state.users.unshift(newUser);
-    delete this.state.pendingOtps[normEmail];
+    this.state.users.unshift(user);
     this.saveDisk();
-    return { user: newUser };
+    return user;
   }
 
-  createPasswordResetOtp(email) {
-    const normEmail = String(email || '').toLowerCase().trim();
-    const user = this.findUserByEmail(normEmail);
-    if (!user) {
-      return { error: 'No registered account found with this email address.' };
-    }
-    const code = String(crypto.randomInt(100000, 999999));
-    if (!this.state.pendingOtps) this.state.pendingOtps = {};
-    this.state.pendingOtps[normEmail] = {
-      purpose: 'reset',
-      codeHash: crypto.createHash('sha256').update(code).digest('hex'),
-      expiresAt: Date.now() + 10 * 60 * 1000
-    };
-    this.saveDisk();
-    return { email: normEmail, verificationCode: code };
-  }
-
-  confirmPasswordReset(email, code, newPassword) {
-    const normEmail = String(email || '').toLowerCase().trim();
-    const pwErr = this.validatePasswordStrength(newPassword);
-    if (pwErr) return { error: pwErr };
-
-    const pending = this.state.pendingOtps?.[normEmail];
-    if (!pending || pending.purpose !== 'reset') {
-      return { error: 'No password reset code found for this email.' };
-    }
-    if (Date.now() > pending.expiresAt) {
-      delete this.state.pendingOtps[normEmail];
-      this.saveDisk();
-      return { error: 'Reset code expired. Please request a new one.' };
-    }
-    const providedHash = crypto.createHash('sha256').update(String(code || '').trim()).digest('hex');
-    if (providedHash !== pending.codeHash) {
-      return { error: 'Invalid verification code.' };
-    }
-
-    const user = this.findUserByEmail(normEmail);
-    if (!user) return { error: 'Account not found.' };
-
-    user.passwordHash = bcrypt.hashSync(newPassword, 12);
-    delete this.state.pendingOtps[normEmail];
-    this.saveDisk();
-    return { success: true };
-  }
-
-  // ==================== ADMIN CLIENT ACCOUNTS CRUD (VIEW, ADD, EDIT, PASSWORD, DELETE) ====================
+  // ==================== ADMIN: CLIENT ACCOUNTS ====================
 
   getAllClients() {
     return (this.state.users || []).map((u) => ({
@@ -844,84 +905,60 @@ class SiteStore {
     }));
   }
 
-  adminCreateClient({ fullName, email, phone, address, password }) {
-    const normEmail = String(email || '').toLowerCase().trim();
-    const normPhone = this.normalizePhone(phone);
-    if (!fullName?.trim() || !normEmail || !normPhone || !address?.trim() || !password) {
-      return { error: 'Full Name, Email, Phone Number, Address, and Password are all required.' };
+  validateProfile({ fullName, email, phone, address }, { partial = false } = {}) {
+    const out = {};
+    if (!partial || fullName !== undefined) {
+      out.fullName = v.str(fullName, 80);
+      if (!out.fullName) return { error: 'Full name is required.' };
     }
-    const pwErr = this.validatePasswordStrength(password);
-    if (pwErr) return { error: pwErr };
-
-    if (this.findUserByEmail(normEmail)) {
-      return { error: 'An account with this email already exists.' };
+    if (!partial || email !== undefined) {
+      out.email = v.normEmail(email);
+      if (!v.isEmail(out.email)) return { error: 'Please provide a valid email address.' };
     }
-    if (this.findUserByPhone(normPhone)) {
-      return { error: 'An account with this phone number already exists.' };
+    if (!partial || phone !== undefined) {
+      out.phone = v.normPhone(phone);
+      if (!v.isPhone(out.phone)) return { error: 'Please enter a valid Bangladeshi mobile number (e.g. 01XXXXXXXXX).' };
     }
-
-    const newUser = {
-      id: 'user-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-      fullName: fullName.trim(),
-      email: normEmail,
-      phone: normPhone,
-      address: address.trim(),
-      role: 'customer',
-      emailVerified: true,
-      passwordHash: bcrypt.hashSync(password, 12),
-      encryptedProfile: encryptData({ fullName: fullName.trim(), email: normEmail, phone: normPhone, address: address.trim() }),
-      createdAt: new Date().toISOString()
-    };
-    if (!Array.isArray(this.state.users)) this.state.users = [];
-    this.state.users.unshift(newUser);
-    this.saveDisk();
-    return { client: newUser };
+    if (!partial || address !== undefined) {
+      out.address = v.str(address, 300);
+      if (out.address.length < 5) return { error: 'Please enter a full address.' };
+    }
+    return { data: out };
   }
 
-  adminUpdateClient(userId, { fullName, email, phone, address, newPassword }) {
-    const idx = (this.state.users || []).findIndex((u) => u.id === userId);
-    if (idx === -1) return { error: 'Client account not found.' };
-    const u = this.state.users[idx];
+  adminCreateClient(profile, passwordHash) {
+    const user = {
+      id: newId('user'),
+      ...profile,
+      role: 'customer',
+      emailVerified: true,
+      tokenVersion: 0,
+      passwordHash,
+      createdAt: new Date().toISOString()
+    };
+    this.state.users.unshift(user);
+    this.saveDisk();
+    return user;
+  }
 
-    if (email !== undefined) {
-      const normEmail = String(email).toLowerCase().trim();
-      if (normEmail !== u.email.toLowerCase()) {
-        const conflict = this.findUserByEmail(normEmail);
-        if (conflict && conflict.id !== userId) {
-          return { error: 'This email address is already used by another account.' };
-        }
-        u.email = normEmail;
-      }
+  adminUpdateClient(userId, data, passwordHash = null) {
+    const u = (this.state.users || []).find((x) => x.id === userId);
+    if (!u) return { error: 'Client account not found.' };
+    if (data.email && data.email !== u.email) {
+      const c = this.findUserByEmail(data.email);
+      if (c && c.id !== userId) return { error: 'This email address is already used by another account.' };
     }
-
-    if (phone !== undefined) {
-      const normPhone = this.normalizePhone(phone);
-      if (normPhone !== this.normalizePhone(u.phone)) {
-        const conflict = this.findUserByPhone(normPhone);
-        if (conflict && conflict.id !== userId) {
-          return { error: 'This phone number is already used by another account.' };
-        }
-        u.phone = normPhone;
-      }
+    if (data.phone && v.normPhone(data.phone) !== v.normPhone(u.phone)) {
+      const c = this.findUserByPhone(data.phone);
+      if (c && c.id !== userId) return { error: 'This phone number is already used by another account.' };
     }
-
-    if (fullName && fullName.trim()) u.fullName = fullName.trim();
-    if (address && address.trim()) u.address = address.trim();
-
-    if (newPassword && newPassword.trim()) {
-      const pwErr = this.validatePasswordStrength(newPassword.trim());
-      if (pwErr) return { error: pwErr };
-      u.passwordHash = bcrypt.hashSync(newPassword.trim(), 12);
+    const emailChanged = data.email && data.email !== u.email;
+    Object.assign(u, data);
+    if (passwordHash || emailChanged) {
+      u.tokenVersion = (u.tokenVersion || 0) + 1;
+      if (passwordHash) u.passwordHash = passwordHash;
     }
-
-    u.encryptedProfile = encryptData({
-      fullName: u.fullName,
-      email: u.email,
-      phone: u.phone,
-      address: u.address
-    });
     u.updatedAt = new Date().toISOString();
-    this.state.users[idx] = u;
     this.saveDisk();
     return { client: u };
   }
@@ -935,4 +972,7 @@ class SiteStore {
   }
 }
 
-module.exports = new SiteStore();
+const store = new SiteStore();
+store.DELIVERY_CHARGE = DELIVERY_CHARGE;
+store.FREE_DELIVERY_OVER = FREE_DELIVERY_OVER;
+module.exports = store;

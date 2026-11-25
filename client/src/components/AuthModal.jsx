@@ -41,7 +41,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, noticeMessag
 
   // OTP Verification & Password Reset Fields
   const [otpCode, setOtpCode] = useState('');
-  const [devCodeHint, setDevCodeHint] = useState('');
   const [newPassword, setNewPassword] = useState('');
 
   if (!isOpen) return null;
@@ -70,7 +69,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, noticeMessag
         setError(data.error || 'Invalid email or password.');
         return;
       }
-      onAuthSuccess(data.user, data.token);
+      onAuthSuccess(data.user);
       setPassword('');
       onClose();
     } catch {
@@ -101,7 +100,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, noticeMessag
         return;
       }
       setInfo(data.message);
-      setDevCodeHint(data.devPreviewCode || '');
       setOtpCode('');
       setStep('verify-register');
     } catch {
@@ -127,10 +125,9 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, noticeMessag
         setError(data.error || 'Invalid verification code.');
         return;
       }
-      onAuthSuccess(data.user, data.token);
+      onAuthSuccess(data.user);
       setPassword('');
       setOtpCode('');
-      setDevCodeHint('');
       onClose();
     } catch {
       setError('Network error verifying OTP.');
@@ -156,7 +153,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, noticeMessag
         return;
       }
       setInfo(data.message);
-      setDevCodeHint(data.devPreviewCode || '');
       setOtpCode('');
       setNewPassword('');
       setStep('forgot-reset');
@@ -191,7 +187,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, noticeMessag
       setPassword('');
       setNewPassword('');
       setOtpCode('');
-      setDevCodeHint('');
       setStep('signin');
     } catch {
       setError('Network error resetting password.');
@@ -276,11 +271,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, noticeMessag
           {info && (
             <div className="bg-emerald-50 border border-emerald-200 p-3 text-xs font-semibold text-emerald-800 space-y-1">
               <p>{info}</p>
-              {devCodeHint && (
-                <p className="font-mono text-sm font-extrabold text-[#0F2557] bg-white px-2.5 py-1 border border-emerald-300 inline-block mt-1">
-                  Verification Code: {devCodeHint}
-                </p>
-              )}
             </div>
           )}
 
@@ -616,7 +606,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, noticeMessag
 
           <div className="flex items-center justify-center gap-1.5 text-[10px] text-navy-500 pt-2 border-t border-navy-100">
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-            <span>Protected by AES-256-GCM, Bcrypt & Email Domain Authentication</span>
+            <span>Protected by verified email codes, Bcrypt password hashing & encrypted storage</span>
           </div>
         </div>
       </div>

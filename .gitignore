@@ -21,3 +21,8 @@ server/uploads/*
 npm-debug.log*
 .DS_Store
 Thumbs.db
+
+# Local dev secrets & temp uploads
+server/.dev-secrets.json
+server/uploads/tmp/
+server/models/*.tmp

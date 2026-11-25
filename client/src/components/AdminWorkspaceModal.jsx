@@ -89,14 +89,14 @@ export default function AdminWorkspaceModal({
   useEffect(() => {
     if (isOpen && authToken) {
       fetch('/api/orders', {
-        headers: { Authorization: `Bearer ${authToken}` }
+        headers: {}
       })
         .then((r) => r.json())
         .then((d) => setOrders(d.orders || []))
         .catch(console.error);
 
       fetch('/api/admin/clients', {
-        headers: { Authorization: `Bearer ${authToken}` }
+        headers: {}
       })
         .then((r) => r.json())
         .then((d) => setClients(d.clients || []))
@@ -145,7 +145,7 @@ export default function AdminWorkspaceModal({
     if (!activeSection || !authToken || !editSecName.trim()) return;
     const res = await fetch(`/api/sections/${activeSection.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: editSecName.trim(), subheading: editSecSub.trim() })
     });
     const data = await res.json();
@@ -161,7 +161,7 @@ export default function AdminWorkspaceModal({
     if (!authToken) return;
     const res = await fetch(`/api/sections/${sec.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ showOnHomepage: sec.showOnHomepage === false ? true : false })
     });
     const data = await res.json();
@@ -193,7 +193,7 @@ export default function AdminWorkspaceModal({
 
     const res = await fetch(url, {
       method,
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
     const data = await res.json();
@@ -211,7 +211,7 @@ export default function AdminWorkspaceModal({
     if (!authToken || !window.confirm(`Permanently delete client account "${name}"?`)) return;
     const res = await fetch(`/api/admin/clients/${userId}`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${authToken}` }
+      headers: {}
     });
     const data = await res.json();
     if (res.ok) {
@@ -228,7 +228,7 @@ export default function AdminWorkspaceModal({
     if (!authToken) return;
     const res = await fetch('/api/site-config', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         topAnnouncementBar: topBarDraft,
         newsBulletin: bulletinDraft,
@@ -248,7 +248,7 @@ export default function AdminWorkspaceModal({
     if (!newSecName.trim() || !authToken) return;
     const res = await fetch('/api/sections', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: newSecName.trim(),
         subheading: newSecSub.trim(),
@@ -272,7 +272,7 @@ export default function AdminWorkspaceModal({
     if (!authToken || !window.confirm('Delete this section and its products?')) return;
     const res = await fetch(`/api/sections/${secId}`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${authToken}` }
+      headers: {}
     });
     const data = await res.json();
     if (res.ok) {
@@ -294,7 +294,7 @@ export default function AdminWorkspaceModal({
 
     const res = await fetch(`/api/sections/${activeSection.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ linkedProductIds: updated })
     });
     const data = await res.json();
@@ -312,8 +312,12 @@ export default function AdminWorkspaceModal({
       for (const file of Array.from(files)) {
         const fd = new FormData();
         fd.append('file', file);
-        const res = await fetch('/api/media/upload', { method: 'POST', body: fd });
-        const data = await res.json();
+        const res = await fetch('/api/media/upload?purpose=product', { method: 'POST', body: fd });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          flash(data.error || `Upload failed for ${file.name}`);
+          return;
+        }
         if (data.file?.url) {
           setProdImages((prev) => [...prev, data.file.url]);
         }
@@ -356,7 +360,7 @@ export default function AdminWorkspaceModal({
 
     const res = await fetch(url, {
       method,
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
     const data = await res.json();
@@ -385,7 +389,7 @@ export default function AdminWorkspaceModal({
     if (!authToken || !window.confirm('PERMANENTLY delete this product and its uploaded photos from the entire website? This cannot be undone.')) return;
     const res = await fetch(`/api/products/${encodeURIComponent(prodId)}`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${authToken}` }
+      headers: {}
     });
     const data = await res.json();
     if (res.ok) {
@@ -1346,7 +1350,7 @@ export default function AdminWorkspaceModal({
                   type="text"
                   value={footerDraft.mapQuery || ''}
                   onChange={(e) => setFooterDraft({ ...footerDraft, mapQuery: e.target.value })}
-                  placeholder="e.g. 23.4607, 91.1809 OR 1126, Jhawtola, Cumilla, Bangladesh"
+                  placeholder="e.g. 23.4607, 91.1809 OR your shop address"
                   className="w-full border border-navy-200 px-3 py-2 text-xs text-[#0F2557]"
                 />
                 <p className="text-[10px] text-navy-500 mt-1">

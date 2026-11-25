@@ -33,6 +33,7 @@ import AdminWorkspaceModal from './components/AdminWorkspaceModal';
 import AuthModal from './components/AuthModal';
 import PublicSearchModal from './components/PublicSearchModal';
 import LocationMapModal from './components/LocationMapModal';
+import { safeHref } from './utils/safeUrl';
 
 function ProductTrainSection({ section, onSeeAll, onAddToCart, onTextAdmin }) {
   const scrollRef = useRef(null);
@@ -155,8 +156,8 @@ export default function App() {
     footer: {
       enabled: true,
       sections: [
-        { id: 'ft-contact', title: 'Contact', content: 'Phone: 01600332120\nEmail: aajmhtaseen@gmail.com' },
-        { id: 'ft-location', title: 'Location', content: '1126, Jhawtola, Cumilla, Bangladesh' },
+        { id: 'ft-contact', title: 'Contact', content: '' },
+        { id: 'ft-location', title: 'Location', content: '' },
         {
           id: 'ft-about',
           title: 'About Us',
@@ -165,7 +166,7 @@ export default function App() {
         {
           id: 'ft-privacy',
           title: 'Privacy & Policy',
-          content: 'Your personal details, orders, and messages are protected with end-to-end AES-256-GCM encryption and are never shared with third parties.'
+          content: 'Your personal details, orders, and messages are sent over HTTPS, stored encrypted at rest, are only visible to you and the store admin, and are never sold or shared with third parties.'
         }
       ],
       linksSectionTitle: 'Links',
@@ -192,15 +193,10 @@ export default function App() {
   const [cartWarning, setCartWarning] = useState('');
 
   // Unified Auth State (Single Master Admin + Verified Customer Accounts)
-  const [authToken, setAuthToken] = useState(() => localStorage.getItem('axelon_auth_token') || '');
-  const [currentUser, setCurrentUser] = useState(() => {
-    try {
-      const saved = localStorage.getItem('axelon_user');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  // The session lives in a secure HttpOnly cookie that JavaScript cannot read;
+  // we only keep the public profile in memory and ask the server who we are on load.
+  const [currentUser, setCurrentUser] = useState(null);
+  const authToken = currentUser ? 'cookie-session' : '';
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authNotice, setAuthNotice] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -209,36 +205,42 @@ export default function App() {
   const isAdmin = currentUser?.role === 'admin';
 
   // Client identity for Cart Booking (auto-fills from signed-in user)
-  const [clientId] = useState(() => {
-    const saved = localStorage.getItem('axelon_client_id');
-    if (saved) return saved;
-    const generated = 'client-' + Math.random().toString(36).slice(2, 9);
-    localStorage.setItem('axelon_client_id', generated);
-    return generated;
-  });
-  const [clientName, setClientName] = useState(() => localStorage.getItem('axelon_client_name') || '');
-  const [clientPhone, setClientPhone] = useState(() => localStorage.getItem('axelon_client_phone') || '');
-  const [clientEmail, setClientEmail] = useState(() => localStorage.getItem('axelon_client_email') || '');
+  const [clientName, setClientName] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
 
-  const handleAuthSuccess = (user, token) => {
+  const handleAuthSuccess = (user) => {
     setCurrentUser(user);
-    setAuthToken(token);
     setAuthNotice('');
-    localStorage.setItem('axelon_user', JSON.stringify(user));
-    localStorage.setItem('axelon_auth_token', token);
-    if (user.fullName) setClientName(user.fullName);
-    if (user.phone) setClientPhone(user.phone);
-    if (user.email) setClientEmail(user.email);
+    setClientName(user.fullName || '');
+    setClientPhone(user.phone || '');
+    setClientEmail(user.email || '');
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {}
     setCurrentUser(null);
-    setAuthToken('');
+    setClientName('');
+    setClientPhone('');
+    setClientEmail('');
     setIsMessengerOpen(false);
     setIsAdminWorkspaceOpen(false);
-    localStorage.removeItem('axelon_user');
-    localStorage.removeItem('axelon_auth_token');
   };
+
+  // Restore the signed-in session (if any) and remove data older versions stored in the browser
+  useEffect(() => {
+    ['axelon_auth_token', 'axelon_user', 'axelon_client_id', 'axelon_client_name', 'axelon_client_phone', 'axelon_client_email'].forEach(
+      (k) => localStorage.removeItem(k)
+    );
+    fetch('/api/auth/me')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.user) handleAuthSuccess(d.user);
+      })
+      .catch(() => {});
+  }, []);
 
   // Cart State
   const [cart, setCart] = useState(() => {
@@ -260,12 +262,6 @@ export default function App() {
 
   // Admin Workspace Modal (opened discreetly via floating bottom-right gear pill for testing until Admin auth is added)
   const [isAdminWorkspaceOpen, setIsAdminWorkspaceOpen] = useState(false);
-
-  useEffect(() => {
-    localStorage.setItem('axelon_client_name', clientName);
-    localStorage.setItem('axelon_client_phone', clientPhone);
-    localStorage.setItem('axelon_client_email', clientEmail);
-  }, [clientName, clientPhone, clientEmail]);
 
   useEffect(() => {
     localStorage.setItem('axelon_cart', JSON.stringify(cart));
@@ -311,18 +307,20 @@ export default function App() {
     if (data?.stats) setStoreStats(data.stats);
   };
 
+  // (Re)load the catalog and (re)connect the real-time socket whenever the signed-in user changes,
+  // so the socket is always authenticated as the current user (or as a guest).
   useEffect(() => {
     fetch('/api/bootstrap')
       .then((res) => res.json())
       .then(applyBootstrap)
       .catch(() => {});
 
-    const s = io('/', { transports: ['websocket', 'polling'] });
+    const s = io('/', { transports: ['websocket', 'polling'], withCredentials: true });
     setSocket(s);
     s.on('site:updated', applyBootstrap);
 
     return () => s.disconnect();
-  }, []);
+  }, [currentUser?.id]);
 
   // Strict Duplicate-Product Cart Rule:
   // If same product is already in cart, warn the client and do NOT add a duplicate entry;
@@ -827,7 +825,7 @@ export default function App() {
                       return (
                         <a
                           key={link.id}
-                          href={link.url || '#'}
+                          href={safeHref(link.url)}
                           target="_blank"
                           rel="noreferrer"
                           title={link.label}
@@ -909,7 +907,12 @@ export default function App() {
         updateQuantity={updateCartQuantity}
         removeFromCart={removeFromCart}
         clearCart={() => setCart([])}
-        clientId={currentUser?.id || clientId}
+        isSignedIn={Boolean(currentUser)}
+        onRequireSignIn={() => {
+          setIsCartOpen(false);
+          setAuthNotice('Please Sign In or Register a verified account to place your booking order.');
+          setIsAuthModalOpen(true);
+        }}
         clientName={clientName}
         setClientName={setClientName}
         clientPhone={clientPhone}

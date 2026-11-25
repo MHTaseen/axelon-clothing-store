@@ -77,7 +77,7 @@ export default function MessengerModal({
 
     if (viewRole === 'admin') {
       fetch('/api/chat/threads', {
-        headers: { Authorization: `Bearer ${authToken}` }
+        headers: {}
       })
         .then((r) => r.json())
         .then((data) => {
@@ -96,8 +96,7 @@ export default function MessengerModal({
       fetch('/api/chat/session', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({})
       })
@@ -111,8 +110,7 @@ export default function MessengerModal({
 
   useEffect(() => {
     if (!socket || !isOpen) return;
-    socket.emit('join:thread', { clientId: currentThreadId });
-    if (viewRole === 'admin') socket.emit('join:admin');
+    // Rooms are assigned by the server from the signed-in session.
 
     const onIncoming = (payload) => {
       if (payload.clientId === currentThreadId) {
@@ -239,15 +237,12 @@ export default function MessengerModal({
   const handleStartNewClientChat = async (e) => {
     e.preventDefault();
     if (!newClientName.trim() || !authToken) return;
-    const newId = 'client-' + Date.now();
     const res = await fetch('/api/chat/admin-start', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${authToken}`
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        clientId: newId,
         clientName: newClientName.trim(),
         clientPhone: newClientPhone.trim()
       })
@@ -273,7 +268,7 @@ export default function MessengerModal({
       `/api/chat/message/${encodeURIComponent(currentThreadId)}/${encodeURIComponent(messageId)}`,
       {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${authToken}` }
+        headers: {}
       }
     );
     const data = await res.json();
@@ -294,7 +289,7 @@ export default function MessengerModal({
     }
     const res = await fetch(`/api/chat/thread/${encodeURIComponent(targetClientId)}`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${authToken}` }
+      headers: {}
     });
     const data = await res.json();
     if (res.ok) {
@@ -315,12 +310,9 @@ export default function MessengerModal({
 
     const payload = {
       clientId: currentThreadId,
-      clientName: viewRole === 'admin' ? thread?.clientName : clientName,
-      clientPhone: viewRole === 'admin' ? thread?.clientPhone : clientPhone,
-      clientEmail: viewRole === 'admin' ? thread?.clientEmail : clientEmail,
       text: text.trim(),
-      attachments,
-      inquiredProduct: inquiredProduct || null
+      attachments: attachments.map((a) => a.id),
+      inquiredProductId: inquiredProduct?.id || null
     };
 
     setText('');
@@ -330,12 +322,15 @@ export default function MessengerModal({
     const res = await fetch('/api/chat/message', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${authToken}`
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(payload)
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setUploadError(data.error || 'Message could not be sent.');
+      return;
+    }
     if (data.thread) {
       setThread(data.thread);
       if (viewRole === 'admin') {
@@ -538,7 +533,7 @@ export default function MessengerModal({
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               <div className="mx-auto max-w-md bg-[#0F2557] px-3 py-2 text-center text-[11px] text-[#F2D5B1] border border-[#B8844E]/40">
                 <Lock className="inline h-3 w-3 mr-1" />
-                End-to-End AES-256 Encrypted AXELON Messenger
+                Private AXELON Messenger — only you and the store can read it
               </div>
 
               {(thread?.messages || []).map((msg) => {

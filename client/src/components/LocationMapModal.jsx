@@ -9,7 +9,7 @@ import { MapPin, Navigation, ExternalLink, X } from 'lucide-react';
 export default function LocationMapModal({ isOpen, onClose, address, mapQuery }) {
   if (!isOpen) return null;
 
-  const destination = (mapQuery || address || '1126, Jhawtola, Cumilla, Bangladesh').trim();
+  const destination = (mapQuery || address || 'Bangladesh').trim();
   const encodedDest = encodeURIComponent(destination);
 
   // Real interactive Google Maps embed URL (no API key required, works on all devices)

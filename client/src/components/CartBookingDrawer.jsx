@@ -21,7 +21,8 @@ export default function CartBookingDrawer({
   updateQuantity,
   removeFromCart,
   clearCart,
-  clientId,
+  isSignedIn,
+  onRequireSignIn,
   clientName,
   setClientName,
   clientPhone,
@@ -33,6 +34,7 @@ export default function CartBookingDrawer({
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [confirmedSlip, setConfirmedSlip] = useState(null);
+  const [bookingError, setBookingError] = useState('');
 
   if (!isOpen) return null;
 
@@ -44,34 +46,41 @@ export default function CartBookingDrawer({
   const handleSubmitBooking = async (e) => {
     e.preventDefault();
     if (cart.length === 0) return;
+    setBookingError('');
+    if (!isSignedIn) {
+      onRequireSignIn?.();
+      return;
+    }
     setSubmitting(true);
 
     try {
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // Only product ids & quantities are sent — the server looks up the real prices.
         body: JSON.stringify({
-          clientId,
           client: {
             name: clientName || 'Customer',
             phone: clientPhone,
-            email: clientEmail,
             address,
             notes
           },
-          items: cart,
-          subtotal,
-          deliveryCharge,
-          totalAmount
+          items: cart.map((i) => ({ id: i.id, quantity: i.quantity }))
         })
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        onRequireSignIn?.();
+        return;
+      }
       if (res.ok && data.order) {
         setConfirmedSlip(data.order);
         clearCart();
+      } else {
+        setBookingError(data.error || 'Could not send your booking. Please try again.');
       }
     } catch (err) {
-      console.error('Booking order failed:', err);
+      setBookingError('Network error — please check your connection and try again.');
     } finally {
       setSubmitting(false);
     }
@@ -295,8 +304,9 @@ export default function CartBookingDrawer({
                     <input
                       type="email"
                       value={clientEmail}
-                      onChange={(e) => setClientEmail(e.target.value)}
-                      placeholder="Email (Optional)"
+                      readOnly
+                      title="Your verified account email is used for this order"
+                      placeholder="Account email (sign in first)"
                       className="w-full border border-navy-200 pl-9 pr-3 py-2 text-xs text-navy-900 focus:border-[#0F2557] focus:outline-none"
                     />
                   </div>
@@ -322,6 +332,14 @@ export default function CartBookingDrawer({
                   className="w-full border border-navy-200 px-3 py-2 text-xs text-navy-900 focus:border-[#0F2557] focus:outline-none"
                 />
 
+                {bookingError && (
+                  <div className="bg-red-50 border border-red-200 p-3 text-xs font-semibold text-red-700">{bookingError}</div>
+                )}
+                {!isSignedIn && (
+                  <p className="text-[11px] font-semibold text-[#9A6B3B]">
+                    You need a verified account to place an order — you'll be asked to sign in.
+                  </p>
+                )}
                 <button
                   type="submit"
                   disabled={submitting}
