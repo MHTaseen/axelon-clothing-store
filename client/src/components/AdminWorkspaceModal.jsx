@@ -1336,17 +1336,34 @@ export default function AdminWorkspaceModal({
               </div>
             </div>
 
-            {/* 5. Copyright Line */}
-            <div className="bg-white border border-[#DBBB97] p-4 space-y-2">
-              <label className="block text-xs font-extrabold uppercase tracking-wider text-[#0F2557]">
-                Bottom Copyright Text
-              </label>
-              <input
-                type="text"
-                value={footerDraft.copyright || ''}
-                onChange={(e) => setFooterDraft({ ...footerDraft, copyright: e.target.value })}
-                className="w-full border border-navy-200 px-3 py-2 text-xs font-semibold text-[#0F2557]"
-              />
+            {/* 5. Google Map Pin / Exact GPS Coordinates & Copyright Line */}
+            <div className="bg-white border border-[#DBBB97] p-4 space-y-3">
+              <div>
+                <label className="block text-xs font-extrabold uppercase tracking-wider text-[#0F2557] mb-1">
+                  Google Maps Exact Location / GPS Coordinates (Optional Override)
+                </label>
+                <input
+                  type="text"
+                  value={footerDraft.mapQuery || ''}
+                  onChange={(e) => setFooterDraft({ ...footerDraft, mapQuery: e.target.value })}
+                  placeholder="e.g. 23.4607, 91.1809 OR 1126, Jhawtola, Cumilla, Bangladesh"
+                  className="w-full border border-navy-200 px-3 py-2 text-xs text-[#0F2557]"
+                />
+                <p className="text-[10px] text-navy-500 mt-1">
+                  Leave blank to automatically pin the address from your "Location" footer section, or paste exact GPS coordinates from Google Maps for pinpoint accuracy.
+                </p>
+              </div>
+              <div className="pt-2 border-t border-[#DBBB97]/40">
+                <label className="block text-xs font-extrabold uppercase tracking-wider text-[#0F2557] mb-1">
+                  Bottom Copyright Text
+                </label>
+                <input
+                  type="text"
+                  value={footerDraft.copyright || ''}
+                  onChange={(e) => setFooterDraft({ ...footerDraft, copyright: e.target.value })}
+                  className="w-full border border-navy-200 px-3 py-2 text-xs font-semibold text-[#0F2557]"
+                />
+              </div>
             </div>
           </div>
         ) : activeTab === 'clients' ? (

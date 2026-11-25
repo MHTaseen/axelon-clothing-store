@@ -30,9 +30,9 @@ export default function SectionProductsModal({ section, onClose, onAddToCart, on
         </div>
 
         {/* All Products Grid */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-7 bg-[#FBF8F4]">
+        <div className="flex-1 overflow-y-auto p-5 sm:p-7 axelon-glass-canvas">
           {products.length === 0 ? (
-            <div className="py-16 text-center text-sm text-navy-600">
+            <div className="py-16 text-center text-sm text-[#E5C193]">
               No products added to this section yet.
             </div>
           ) : (

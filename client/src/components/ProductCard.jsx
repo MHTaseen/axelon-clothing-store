@@ -20,12 +20,12 @@ export default function ProductCard({ product, onAddToCart, onTextAdmin, compact
 
   return (
     <div
-      className={`group flex flex-col bg-white border border-[#DBBB97]/70 hover:border-[#0F2557] transition-all duration-300 shadow-sm hover:shadow-xl overflow-hidden ${
+      className={`group flex flex-col rounded-2xl glass-card transition-all duration-300 hover:-translate-y-1.5 overflow-hidden ${
         compact ? 'w-full' : 'w-[245px] xs:w-[265px] sm:w-[285px] shrink-0 snap-start'
       }`}
     >
       {/* Multi-photo Product Image Frame */}
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#F7F3EE]">
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#0A1736]/80">
         {images[imgIndex] ? (
           <img
             src={images[imgIndex]}
@@ -33,10 +33,13 @@ export default function ProductCard({ product, onAddToCart, onTextAdmin, compact
             className="h-full w-full object-cover object-top group-hover:scale-105 transition duration-700"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-xs text-navy-400">
+          <div className="flex h-full w-full items-center justify-center text-xs text-[#F2D5B1]/60">
             No Photo
           </div>
         )}
+
+        {/* Subtle Top Glass Sheen */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#050C1D]/70 via-transparent to-white/10" />
 
         {/* Photo Switcher Arrows if multiple photos were uploaded */}
         {images.length > 1 && (
@@ -47,7 +50,7 @@ export default function ProductCard({ product, onAddToCart, onTextAdmin, compact
                 e.stopPropagation();
                 setImgIndex((prev) => (prev - 1 + images.length) % images.length);
               }}
-              className="absolute left-2 top-1/2 -translate-y-1/2 h-7 w-7 flex items-center justify-center rounded-full bg-white/85 text-[#0F2557] hover:bg-[#0F2557] hover:text-white transition shadow"
+              className="absolute left-2 top-1/2 -translate-y-1/2 h-7 w-7 flex items-center justify-center rounded-full glass-navy text-[#F2D5B1] hover:bg-[#D4A876] hover:text-[#060F24] transition"
               aria-label="Previous photo"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -58,7 +61,7 @@ export default function ProductCard({ product, onAddToCart, onTextAdmin, compact
                 e.stopPropagation();
                 setImgIndex((prev) => (prev + 1) % images.length);
               }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 flex items-center justify-center rounded-full bg-white/85 text-[#0F2557] hover:bg-[#0F2557] hover:text-white transition shadow"
+              className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 flex items-center justify-center rounded-full glass-navy text-[#F2D5B1] hover:bg-[#D4A876] hover:text-[#060F24] transition"
               aria-label="Next photo"
             >
               <ChevronRight className="h-4 w-4" />
@@ -68,7 +71,7 @@ export default function ProductCard({ product, onAddToCart, onTextAdmin, compact
                 <span
                   key={i}
                   className={`h-1.5 rounded-full transition-all ${
-                    i === imgIndex ? 'w-4 bg-[#0F2557]' : 'w-1.5 bg-white/80'
+                    i === imgIndex ? 'w-4 bg-[#E5C193]' : 'w-1.5 bg-white/50'
                   }`}
                 />
               ))}
@@ -77,25 +80,25 @@ export default function ProductCard({ product, onAddToCart, onTextAdmin, compact
         )}
       </div>
 
-      {/* Product Info + Admin-Selected Visible Fields (No Description) */}
+      {/* Product Info + Admin-Selected Visible Fields (Crystal Glass Interior) */}
       <div className="flex flex-1 flex-col justify-between p-4 space-y-3">
         <div className="space-y-2">
-          <h3 className="font-serif text-lg font-bold text-[#0F2557] leading-snug line-clamp-2">
+          <h3 className="font-serif text-lg font-bold text-silver-chrome leading-snug line-clamp-2 drop-shadow-sm">
             {product.name}
           </h3>
 
-          <div className="text-base font-extrabold text-[#9A6B3B]">
+          <div className="inline-block rounded-full glass-silver px-3 py-0.5 text-sm font-extrabold text-white">
             TK {Number(product.price || 0).toLocaleString()}
           </div>
 
           {visibleFields.length > 0 && (
-            <div className="space-y-1 pt-1.5 border-t border-[#DBBB97]/40">
+            <div className="space-y-1 pt-2 border-t border-slate-200/20">
               {visibleFields.map((field) => (
                 <div key={field.id || field.label} className="flex items-start justify-between gap-2 text-[11px]">
-                  <span className="font-bold uppercase tracking-wider text-navy-600 shrink-0">
+                  <span className="font-bold uppercase tracking-wider text-slate-300 shrink-0">
                     {field.label}:
                   </span>
-                  <span className="text-navy-900 font-medium text-right break-words">
+                  <span className="text-white/95 font-medium text-right break-words">
                     {field.value}
                   </span>
                 </div>
@@ -105,23 +108,23 @@ export default function ProductCard({ product, onAddToCart, onTextAdmin, compact
         </div>
 
         {/* Quantity Selector + Two Mandatory Buttons: Add to Cart & Text Admin */}
-        <div className="space-y-2 pt-2 border-t border-[#DBBB97]/40">
+        <div className="space-y-2.5 pt-2 border-t border-slate-200/20">
           <div className="flex items-center justify-between text-[11px]">
-            <span className="font-bold uppercase tracking-wider text-navy-600">Quantity:</span>
-            <div className="flex items-center border border-[#DBBB97] bg-[#FBF8F4]">
+            <span className="font-bold uppercase tracking-wider text-slate-300">Quantity:</span>
+            <div className="flex items-center rounded-lg glass-silver">
               <button
                 type="button"
                 onClick={() => setQty((q) => Math.max(1, q - 1))}
-                className="px-2 py-1 text-[#0F2557] hover:bg-[#DBBB97]/40 transition"
+                className="px-2 py-1 text-slate-100 hover:bg-white/20 transition rounded-l-lg"
                 aria-label="Decrease quantity"
               >
                 <Minus className="h-3 w-3" />
               </button>
-              <span className="px-2.5 text-xs font-extrabold text-[#0F2557]">{qty}</span>
+              <span className="px-2.5 text-xs font-extrabold text-white">{qty}</span>
               <button
                 type="button"
                 onClick={() => setQty((q) => q + 1)}
-                className="px-2 py-1 text-[#0F2557] hover:bg-[#DBBB97]/40 transition"
+                className="px-2 py-1 text-slate-100 hover:bg-white/20 transition rounded-r-lg"
                 aria-label="Increase quantity"
               >
                 <Plus className="h-3 w-3" />
@@ -133,7 +136,7 @@ export default function ProductCard({ product, onAddToCart, onTextAdmin, compact
             <button
               type="button"
               onClick={() => onAddToCart(product, qty)}
-              className="inline-flex items-center justify-center gap-1 bg-[#0F2557] py-2.5 px-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#F2D5B1] hover:bg-[#060F24] transition"
+              className="inline-flex items-center justify-center gap-1 rounded-xl glass-gold-btn py-2.5 px-2 text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[#060F24] transition"
             >
               <ShoppingBag className="h-3.5 w-3.5 shrink-0" />
               <span>Add to Cart</span>
@@ -142,7 +145,7 @@ export default function ProductCard({ product, onAddToCart, onTextAdmin, compact
             <button
               type="button"
               onClick={() => onTextAdmin(product)}
-              className="inline-flex items-center justify-center gap-1 border border-[#0F2557] bg-[#FBF6F0] py-2.5 px-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#0F2557] hover:bg-[#DBBB97] transition"
+              className="inline-flex items-center justify-center gap-1 rounded-xl glass-silver py-2.5 px-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-white transition"
             >
               <MessageSquare className="h-3.5 w-3.5 shrink-0" />
               <span>Text Admin</span>

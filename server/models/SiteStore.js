@@ -83,7 +83,7 @@ const DEFAULT_STATE = {
         { id: 'soc-ig', label: 'Instagram', icon: 'instagram', url: 'https://instagram.com' },
         { id: 'soc-tw', label: 'Twitter', icon: 'twitter', url: 'https://twitter.com' }
       ],
-      copyright: '@AXELOn All rights Reserved'
+      copyright: '@AXELON All rights Reserved'
     }
   },
   // All product sections: "Our Collection" is ALWAYS mandatory and first!
@@ -254,6 +254,10 @@ class SiteStore {
             pendingOtps: parsed.pendingOtps || {},
             adminUser: parsed.adminUser?.email ? parsed.adminUser : DEFAULT_STATE.adminUser
           };
+          if (this.state.config?.footer?.copyright === '@AXELOn All rights Reserved') {
+            this.state.config.footer.copyright = '@AXELON All rights Reserved';
+            this.saveDisk();
+          }
           this.ensureMandatoryCollectionFirst();
         }
       } catch (e) {
@@ -315,11 +319,22 @@ class SiteStore {
   getAllProductsFlat() {
     const map = new Map();
     (this.state.sections || []).forEach((sec) => {
-      (sec.products || []).forEach((p) => {
-        map.set(p.id, { ...p, sourceSectionId: sec.id, sourceSectionName: sec.name });
+      (sec.products || []).forEach((p, idx) => {
+        map.set(p.id, {
+          ...p,
+          sourceSectionId: sec.id,
+          sourceSectionName: sec.name,
+          _fallbackOrder: idx
+        });
       });
     });
-    return Array.from(map.values());
+    // Sort strictly newest added first -> oldest added last
+    return Array.from(map.values()).sort((a, b) => {
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      if (timeB !== timeA) return timeB - timeA;
+      return (a._fallbackOrder ?? 0) - (b._fallbackOrder ?? 0);
+    });
   }
 
   getResolvedSections() {
@@ -328,8 +343,15 @@ class SiteStore {
     const flatMap = new Map();
     allProducts.forEach((p) => flatMap.set(p.id, p));
 
+    const sortNewestFirst = (list) =>
+      [...list].sort((a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return timeB - timeA;
+      });
+
     return this.state.sections.map((sec) => {
-      // Mandatory "Our Collection" displays ALL website products across every category together!
+      // Mandatory "Our Collection" displays ALL website products sorted newest -> oldest!
       if (sec.isMandatory || sec.id === 'sec-collection') {
         return {
           ...sec,
@@ -354,7 +376,7 @@ class SiteStore {
       return {
         ...sec,
         showOnHomepage: sec.showOnHomepage !== false,
-        resolvedProducts: combined
+        resolvedProducts: sortNewestFirst(combined)
       };
     });
   }
@@ -461,7 +483,8 @@ class SiteStore {
           value: String(f.value ?? '').trim(),
           visibleToClient: Boolean(f.visibleToClient ?? true)
         }))
-        : []
+        : [],
+      createdAt: new Date().toISOString()
     };
     sec.products.unshift(newProd);
     this.saveDisk();

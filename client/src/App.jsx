@@ -21,7 +21,8 @@ import {
   Link as LinkIcon,
   Layers,
   Package,
-  AlertTriangle
+  AlertTriangle,
+  MapPin
 } from 'lucide-react';
 
 import ProductCard from './components/ProductCard';
@@ -31,6 +32,7 @@ import MessengerModal from './components/MessengerModal';
 import AdminWorkspaceModal from './components/AdminWorkspaceModal';
 import AuthModal from './components/AuthModal';
 import PublicSearchModal from './components/PublicSearchModal';
+import LocationMapModal from './components/LocationMapModal';
 
 function ProductTrainSection({ section, onSeeAll, onAddToCart, onTextAdmin }) {
   const scrollRef = useRef(null);
@@ -44,17 +46,17 @@ function ProductTrainSection({ section, onSeeAll, onAddToCart, onTextAdmin }) {
   return (
     <section
       id={section.id}
-      className="w-full py-12 sm:py-16 border-b border-[#DBBB97]/40 bg-white even:bg-[#FBF8F4]"
+      className="w-full py-12 sm:py-16 border-b border-slate-200/15"
     >
       <div className="w-full px-4 sm:px-8 lg:px-12">
         {/* Section Heading + Small Subheading + "See Products" Link + Train Arrows */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-7">
-          <div>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#0F2557] tracking-wide">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+          <div className="relative pl-4 border-l-4 border-slate-200/80 shadow-[-4px_0_16px_rgba(226,232,240,0.2)]">
+            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-silver-chrome tracking-wide drop-shadow-sm">
               {section.name}
             </h2>
             {section.subheading && (
-              <p className="text-xs sm:text-sm text-[#9A6B3B] font-medium mt-1">
+              <p className="text-xs sm:text-sm text-slate-300 font-medium mt-1">
                 {section.subheading}
               </p>
             )}
@@ -64,17 +66,17 @@ function ProductTrainSection({ section, onSeeAll, onAddToCart, onTextAdmin }) {
             <button
               type="button"
               onClick={() => onSeeAll(section)}
-              className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#0F2557] border-b-2 border-[#B8844E] pb-0.5 hover:text-[#9A6B3B] transition"
+              className="rounded-full glass-silver px-5 py-2 text-xs font-extrabold uppercase tracking-[0.16em] text-white transition"
             >
               See Products ({products.length})
             </button>
 
             {products.length > 0 && (
-              <div className="hidden sm:flex items-center gap-1.5 ml-2">
+              <div className="hidden sm:flex items-center gap-1.5 ml-1">
                 <button
                   type="button"
                   onClick={() => slideTrain(-1)}
-                  className="p-2 border border-[#DBBB97] bg-white text-[#0F2557] hover:bg-[#0F2557] hover:text-[#F2D5B1] transition"
+                  className="p-2 rounded-full glass-silver text-slate-100 hover:text-white transition"
                   aria-label="Slide Left"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -82,7 +84,7 @@ function ProductTrainSection({ section, onSeeAll, onAddToCart, onTextAdmin }) {
                 <button
                   type="button"
                   onClick={() => slideTrain(1)}
-                  className="p-2 border border-[#DBBB97] bg-white text-[#0F2557] hover:bg-[#0F2557] hover:text-[#F2D5B1] transition"
+                  className="p-2 rounded-full glass-silver text-slate-100 hover:text-white transition"
                   aria-label="Slide Right"
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -94,7 +96,7 @@ function ProductTrainSection({ section, onSeeAll, onAddToCart, onTextAdmin }) {
 
         {/* Horizontal Sliding "Train Buggies" Product Track */}
         {products.length === 0 ? (
-          <div className="border border-dashed border-[#DBBB97] py-12 text-center text-xs text-navy-500">
+          <div className="rounded-2xl glass-navy py-12 text-center text-xs text-slate-300">
             No products in "{section.name}" yet.
           </div>
         ) : (
@@ -173,7 +175,7 @@ export default function App() {
         { id: 'soc-ig', label: 'Instagram', icon: 'instagram', url: 'https://instagram.com' },
         { id: 'soc-tw', label: 'Twitter', icon: 'twitter', url: 'https://twitter.com' }
       ],
-      copyright: '@AXELOn All rights Reserved'
+      copyright: '@AXELON All rights Reserved'
     }
   });
 
@@ -202,6 +204,7 @@ export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authNotice, setAuthNotice] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [activeLocationMap, setActiveLocationMap] = useState(null);
 
   const isAdmin = currentUser?.role === 'admin';
 
@@ -275,6 +278,7 @@ export default function App() {
     isCartOpen ||
     isAuthModalOpen ||
     isSearchOpen ||
+    Boolean(activeLocationMap) ||
     Boolean(activePopupSection);
 
   useEffect(() => {
@@ -389,22 +393,22 @@ export default function App() {
   const activeCategoryPage = sections.find((s) => s.id === activeCategoryPageId) || null;
 
   return (
-    <div className="min-h-screen bg-white text-navy-900 flex flex-col">
-      {/* 1. Full-Width Topmost Admin Announcement Bar (Rich Navy Blue) */}
+    <div className="min-h-screen axelon-glass-canvas text-white flex flex-col">
+      {/* 1. Full-Width Topmost Admin Announcement Bar (Frosted Navy & Silver Glass) */}
       {announcement?.enabled !== false && (
         <div
           role="banner"
-          className="w-full bg-[#0F2557] px-4 sm:px-8 lg:px-12 py-2.5 text-center shadow-sm"
+          className="w-full glass-navy px-4 sm:px-8 lg:px-12 py-2.5 text-center border-x-0 border-t-0"
         >
-          <p className="w-full text-[11px] sm:text-xs font-semibold tracking-[0.16em] uppercase text-[#F2D5B1] leading-relaxed">
+          <p className="w-full text-[11px] sm:text-xs font-semibold tracking-[0.18em] uppercase text-slate-100 leading-relaxed">
             {announcement?.message}
           </p>
         </div>
       )}
 
-      {/* 2. Main Navigation Bar (Soft Biscuit | Zero-Overlap Responsive Layout for Mobile, Tablet & Desktop) */}
+      {/* 2. Main Navigation Bar (Frosted Biscuit Glass | Zero-Overlap Responsive Layout) */}
       {navbar?.enabled !== false && (
-        <header className="sticky top-0 z-40 w-full bg-[#DBBB97]">
+        <header className="sticky top-0 z-40 w-full glass-biscuit">
           {/* Row 1: Logo Left | "Our Collections" Center (md+) | Utility Icons Right */}
           <div className="flex md:grid md:grid-cols-3 items-center justify-between w-full px-3 sm:px-6 lg:px-12 h-14 sm:h-16 md:h-20 gap-2">
             {/* Leftmost: AXELON Name & Logo (Click returns to Homepage) */}
@@ -632,9 +636,9 @@ export default function App() {
 
       {/* CONDITIONAL VIEW: Dedicated Category Page (with Back to Home Button) OR Main Homepage */}
       {activeCategoryPage ? (
-        <main className="flex-1 bg-[#FBF8F4] w-full px-4 sm:px-8 lg:px-12 py-10 sm:py-14">
+        <main className="flex-1 w-full px-4 sm:px-8 lg:px-12 py-10 sm:py-14">
           {/* Back Button + Category Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-8 border-b border-[#DBBB97]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-8 border-b border-slate-200/20">
             <div className="space-y-1">
               <button
                 type="button"
@@ -642,28 +646,28 @@ export default function App() {
                   setActiveCategoryPageId(null);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className="inline-flex items-center gap-1.5 bg-[#0F2557] px-4 py-2 text-xs font-bold uppercase tracking-wider text-[#F2D5B1] hover:bg-[#060F24] transition mb-3"
+                className="inline-flex items-center gap-1.5 rounded-full glass-gold-btn px-5 py-2 text-xs font-extrabold uppercase tracking-wider text-[#060F24] transition mb-3"
               >
                 <ArrowLeft className="h-4 w-4" />
                 <span>Back to Home</span>
               </button>
-              <h1 className="font-serif text-3xl sm:text-5xl font-bold text-[#0F2557]">
+              <h1 className="font-serif text-3xl sm:text-5xl font-bold text-silver-chrome">
                 {activeCategoryPage.name}
               </h1>
               {activeCategoryPage.subheading && (
-                <p className="text-xs sm:text-sm text-[#9A6B3B] font-medium">
+                <p className="text-xs sm:text-sm text-slate-300 font-medium">
                   {activeCategoryPage.subheading}
                 </p>
               )}
             </div>
-            <div className="text-xs font-extrabold uppercase tracking-widest text-[#0F2557] bg-white border border-[#DBBB97] px-4 py-2.5 self-start sm:self-end">
+            <div className="rounded-full glass-silver text-xs font-extrabold uppercase tracking-widest text-white px-5 py-2.5 self-start sm:self-end">
               {(activeCategoryPage.resolvedProducts || []).length} Product(s)
             </div>
           </div>
 
           {/* All Products of This Category in Responsive Grid (With Add to Cart + Quantity + Text Admin) */}
           {(activeCategoryPage.resolvedProducts || []).length === 0 ? (
-            <div className="bg-white border border-dashed border-[#DBBB97] py-16 text-center text-sm text-navy-600">
+            <div className="rounded-2xl glass-navy py-16 text-center text-sm text-[#E5C193]">
               No products have been added to "{activeCategoryPage.name}" yet.
             </div>
           ) : (
@@ -682,31 +686,48 @@ export default function App() {
         </main>
       ) : (
         <>
-          {/* 3. Triple-Thickness (+30%) Biscuit Brand Banner Directly Under Navbar */}
+          {/* 3. Triple-Thickness (+30%) Liquid Glass Brand Showcase Banner */}
           {brandBanner?.enabled !== false && (
-            <section id="top" className="w-full bg-[#DBBB97] h-[220px] sm:h-[312px] flex items-center justify-center px-6">
-              <img
-                src={brandBanner?.logoUrl || '/images/axelon-logo.png'}
-                alt={brandBanner?.brandName || 'AXELON'}
-                className="h-14 sm:h-24 md:h-28 w-auto max-w-[85vw] object-contain"
-              />
+            <section
+              id="top"
+              className="relative overflow-hidden w-full h-[230px] sm:h-[320px] flex items-center justify-center px-6"
+            >
+              {/* Floating Ambient Silver, Gold & Cobalt Glass Orbs */}
+              <div className="animate-orb pointer-events-none absolute -top-12 left-[12%] h-56 w-56 rounded-full bg-slate-200/25 blur-3xl" />
+              <div className="animate-orb pointer-events-none absolute top-8 left-[45%] h-48 w-48 rounded-full bg-[#D4A876]/25 blur-3xl" />
+              <div className="animate-orb pointer-events-none absolute -bottom-16 right-[14%] h-64 w-64 rounded-full bg-[#2453B8]/40 blur-3xl" />
+
+              {/* Frosted Biscuit-Silver Glass Floating Plaque */}
+              <div className="relative z-10 rounded-3xl glass-biscuit px-10 sm:px-20 py-8 sm:py-12 flex items-center justify-center border border-slate-100/75 shadow-[0_20px_60px_rgba(0,0,0,0.52),0_0_32px_rgba(226,232,240,0.18)]">
+                <img
+                  src={brandBanner?.logoUrl || '/images/axelon-logo.png'}
+                  alt={brandBanner?.brandName || 'AXELON'}
+                  className="h-12 sm:h-20 md:h-24 w-auto max-w-[75vw] object-contain drop-shadow-[0_4px_14px_rgba(15,37,87,0.22)]"
+                />
+              </div>
             </section>
           )}
 
-          {/* 4. News Bulletin Ticker Section (Navy Blue & Gold Brown) */}
+          {/* 4. News Bulletin Ticker Section (Frosted Smoked-Navy & Silver Crystal Strip) */}
           {bulletin?.enabled !== false && (bulletin?.items || []).length > 0 && (
             <section
               aria-label="News Bulletin"
-              className="w-full bg-[#0F2557] border-y border-[#B8844E]/50 overflow-hidden flex items-center"
+              className="w-full glass-navy border-x-0 overflow-hidden flex items-center"
             >
               <div className="flex-1 overflow-hidden py-3">
                 <div className="animate-bulletin flex items-center">
                   {[...(bulletin?.items || []), ...(bulletin?.items || [])].map((item, idx) => (
                     <div
                       key={idx}
-                      className="inline-flex items-center gap-3 px-6 text-xs sm:text-[13px] font-medium tracking-wide text-[#F5E3CB] whitespace-nowrap"
+                      className="inline-flex items-center gap-3 px-6 text-xs sm:text-[13px] font-medium tracking-wide text-slate-100 whitespace-nowrap"
                     >
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#D4A876] shrink-0" />
+                      <span
+                        className={`h-2 w-2 rotate-45 shrink-0 ${
+                          idx % 2 === 0
+                            ? 'bg-slate-200 shadow-[0_0_8px_rgba(241,245,249,0.9)]'
+                            : 'bg-[#E5C193] shadow-[0_0_8px_rgba(229,193,147,0.85)]'
+                        }`}
+                      />
                       <span>{item}</span>
                     </div>
                   ))}
@@ -715,51 +736,8 @@ export default function App() {
             </section>
           )}
 
-          {/* 5. Total Categories & Total Products Overview Cards Section */}
-          <section className="w-full bg-[#FBF8F4] border-b border-[#DBBB97]/50 py-8 sm:py-10">
-            <div className="w-full px-4 sm:px-8 lg:px-12">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                {/* Total Categories Card */}
-                <div className="flex items-center justify-between bg-white border border-[#DBBB97] p-5 sm:p-6 shadow-sm">
-                  <div className="space-y-1">
-                    <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#9A6B3B]">
-                      Store Categories
-                    </p>
-                    <p className="font-serif text-3xl sm:text-4xl font-bold text-[#0F2557]">
-                      {storeStats.totalCategories ?? adminCategories.length}
-                    </p>
-                    <p className="text-xs text-navy-600">
-                      Curated clothing categories available in Our Collections
-                    </p>
-                  </div>
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center bg-[#0F2557] text-[#F2D5B1]">
-                    <Layers className="h-7 w-7" />
-                  </div>
-                </div>
-
-                {/* Total Products Card */}
-                <div className="flex items-center justify-between bg-white border border-[#DBBB97] p-5 sm:p-6 shadow-sm">
-                  <div className="space-y-1">
-                    <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[#9A6B3B]">
-                      Total Products
-                    </p>
-                    <p className="font-serif text-3xl sm:text-4xl font-bold text-[#0F2557]">
-                      {storeStats.totalProducts ?? allProducts.length}
-                    </p>
-                    <p className="text-xs text-navy-600">
-                      Unique AXELON pieces ready for cart booking or direct inquiry
-                    </p>
-                  </div>
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center bg-[#B8844E] text-white">
-                    <Package className="h-7 w-7" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* 6. Mandatory "Our Collection" (All Products Together) + Admin Homepage-Enabled Category Sections */}
-          <main className="flex-1 bg-white">
+          {/* 5. Mandatory "Our Collection" (All Products Together) + Admin Homepage-Enabled Category Sections */}
+          <main className="flex-1">
             {homepageSections.map((section) => (
               <ProductTrainSection
                 key={section.id}
@@ -773,23 +751,49 @@ export default function App() {
         </>
       )}
 
-      {/* 6. Dynamic Admin-Controlled Footer Section (Full-Width Navy Blue & Gold Brown) */}
+      {/* 6. Dynamic Admin-Controlled Footer Section (Frosted Crystal Navy Glass) */}
       {footer?.enabled !== false && (
-        <footer className="w-full bg-[#0F2557] text-white border-t-2 border-[#B8844E]/60 mt-auto">
+        <footer className="w-full glass-navy border-x-0 border-b-0 text-white mt-auto">
           <div className="w-full px-4 sm:px-8 lg:px-12 py-12">
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8 pb-10 border-b border-[#B8844E]/30">
-              {/* Dynamic Footer Sections (Spread cleanly across available width) */}
+              {/* Dynamic Footer Sections (Spread cleanly across available width; Location opens live Google Map popup) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 flex-1">
-                {(footer?.sections || []).map((sec) => (
-                  <div key={sec.id} className="space-y-2.5">
-                    <h4 className="font-serif text-lg font-bold tracking-wider uppercase text-[#F2D5B1]">
-                      {sec.title}
-                    </h4>
-                    <p className="text-xs text-white/85 leading-relaxed whitespace-pre-line break-words">
-                      {sec.content}
-                    </p>
-                  </div>
-                ))}
+                {(footer?.sections || []).map((sec) => {
+                  const isLocation =
+                    sec.id === 'ft-location' || (sec.title || '').toLowerCase().includes('location');
+                  return (
+                    <div key={sec.id} className="space-y-2.5">
+                      <h4 className="font-serif text-lg font-bold tracking-wider uppercase text-[#F2D5B1]">
+                        {sec.title}
+                      </h4>
+                      {isLocation ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setActiveLocationMap({
+                              address: sec.content,
+                              mapQuery: footer?.mapQuery || sec.content
+                            })
+                          }
+                          className="group text-left space-y-1.5"
+                          title="Click to open real Google Map & Get Directions"
+                        >
+                          <p className="text-xs text-white/90 group-hover:text-[#F2D5B1] leading-relaxed whitespace-pre-line break-words underline decoration-[#B8844E]/60 underline-offset-4 transition">
+                            {sec.content}
+                          </p>
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[#D4A876] group-hover:text-white transition">
+                            <MapPin className="h-3.5 w-3.5 shrink-0" />
+                            <span>View Live Google Map & Directions</span>
+                          </span>
+                        </button>
+                      ) : (
+                        <p className="text-xs text-white/85 leading-relaxed whitespace-pre-line break-words">
+                          {sec.content}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Social Links Section ("Links") Anchored to the Rightmost Corner */}
@@ -842,7 +846,7 @@ export default function App() {
             {/* Bottom Copyright Line */}
             <div className="pt-6 text-center">
               <p className="text-xs font-semibold tracking-[0.18em] text-[#F2D5B1]">
-                {footer?.copyright || '@AXELOn All rights Reserved'}
+                {footer?.copyright || '@AXELON All rights Reserved'}
               </p>
             </div>
           </div>
@@ -876,6 +880,14 @@ export default function App() {
         onClose={() => setIsSearchOpen(false)}
         onAddToCart={handleAddToCart}
         onTextAdmin={handleTextAdminWithProduct}
+      />
+
+      {/* Real Google Maps Shop Location & Turn-by-Turn Directions Popup */}
+      <LocationMapModal
+        isOpen={Boolean(activeLocationMap)}
+        onClose={() => setActiveLocationMap(null)}
+        address={activeLocationMap?.address}
+        mapQuery={activeLocationMap?.mapQuery}
       />
 
       {/* Reg / Sign In + Email Verification + Forgot Password Modal */}

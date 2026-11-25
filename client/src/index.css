@@ -4,10 +4,104 @@
 
 @layer base {
   html, body {
-    overflow-x: hidden;
+    overflow-x: clip;
     max-width: 100vw;
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    background-color: #050C1D;
+    color: #F8F1E7;
   }
+}
+
+/* Unique Liquid Aurora Navy, Brushed Silver & Champagne Gold Ambient Canvas */
+.axelon-glass-canvas {
+  background-color: #060D1F;
+  background-image:
+    radial-gradient(circle at 12% 16%, rgba(226, 232, 240, 0.20) 0%, transparent 40%),
+    radial-gradient(circle at 86% 14%, rgba(36, 78, 168, 0.44) 0%, transparent 44%),
+    radial-gradient(circle at 52% 48%, rgba(212, 168, 118, 0.16) 0%, transparent 48%),
+    radial-gradient(circle at 18% 82%, rgba(203, 213, 225, 0.15) 0%, transparent 44%),
+    radial-gradient(circle at 85% 86%, rgba(23, 52, 115, 0.42) 0%, transparent 48%);
+  background-attachment: fixed;
+}
+
+/* Smoked Navy & Brushed Silver Crystal Glass */
+.glass-navy {
+  background: linear-gradient(135deg, rgba(18, 34, 72, 0.62) 0%, rgba(9, 20, 48, 0.70) 100%);
+  backdrop-filter: blur(22px) saturate(165%);
+  -webkit-backdrop-filter: blur(22px) saturate(165%);
+  border: 1px solid rgba(226, 232, 240, 0.24);
+  box-shadow: 0 8px 32px rgba(2, 8, 23, 0.48), inset 0 1px 0 rgba(248, 250, 252, 0.22);
+}
+
+/* Liquid Silver / Platinum Frosted Glass (Buttons, Badges & Accents) */
+.glass-silver {
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.24) 0%, rgba(203, 213, 225, 0.14) 50%, rgba(148, 163, 184, 0.20) 100%);
+  backdrop-filter: blur(16px) saturate(170%);
+  -webkit-backdrop-filter: blur(16px) saturate(170%);
+  border: 1px solid rgba(226, 232, 240, 0.48);
+  box-shadow: 0 6px 20px rgba(2, 8, 23, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.glass-silver:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.34) 0%, rgba(226, 232, 240, 0.22) 50%, rgba(186, 200, 220, 0.28) 100%);
+  border-color: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 8px 26px rgba(226, 232, 240, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+/* Warm Frosted Biscuit-Silver Glass (Navbar & Brand Spotlight) */
+.glass-biscuit {
+  background: linear-gradient(135deg, rgba(244, 241, 238, 0.90) 0%, rgba(229, 205, 178, 0.84) 48%, rgba(208, 184, 158, 0.86) 100%);
+  backdrop-filter: blur(20px) saturate(155%);
+  -webkit-backdrop-filter: blur(20px) saturate(155%);
+  border-bottom: 1px solid rgba(248, 250, 252, 0.55);
+  box-shadow: 0 10px 32px rgba(4, 10, 26, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+/* Crystal Silver-Navy Glass Product Card */
+.glass-card {
+  background: linear-gradient(155deg, rgba(241, 245, 249, 0.16) 0%, rgba(148, 163, 184, 0.10) 32%, rgba(15, 37, 87, 0.44) 72%, rgba(7, 16, 38, 0.68) 100%);
+  backdrop-filter: blur(24px) saturate(175%);
+  -webkit-backdrop-filter: blur(24px) saturate(175%);
+  border: 1px solid rgba(226, 232, 240, 0.30);
+  box-shadow: 0 14px 38px rgba(2, 6, 18, 0.50), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+}
+
+.glass-card:hover {
+  border-color: rgba(241, 245, 249, 0.72);
+  box-shadow: 0 22px 50px rgba(2, 6, 18, 0.70), 0 0 28px rgba(226, 232, 240, 0.22), 0 0 18px rgba(212, 168, 118, 0.16), inset 0 1px 1px rgba(255, 255, 255, 0.55);
+}
+
+/* Metallic Brushed Silver Text Gradient */
+.text-silver-chrome {
+  background: linear-gradient(180deg, #FFFFFF 0%, #E2E8F0 52%, #A8B6C8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Frosted Gold Pill Button */
+.glass-gold-btn {
+  background: linear-gradient(125deg, rgba(238, 206, 164, 0.96) 0%, rgba(190, 138, 84, 0.94) 100%);
+  border: 1px solid rgba(255, 250, 242, 0.65);
+  box-shadow: 0 4px 18px rgba(184, 132, 78, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.glass-gold-btn:hover {
+  background: linear-gradient(125deg, rgba(248, 224, 192, 1) 0%, rgba(210, 158, 102, 0.98) 100%);
+  box-shadow: 0 6px 24px rgba(229, 193, 147, 0.52);
+}
+
+/* Luxury Silver-Gold Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #060E22;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #E2E8F0, #94A3B8, #D4A876);
+  border-radius: 999px;
 }
 
 @keyframes bulletin-marquee {
@@ -27,4 +121,17 @@
 
 .animate-bulletin:hover {
   animation-play-state: paused;
+}
+
+@keyframes float-orb {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  50% {
+    transform: translate(22px, -16px) scale(1.06);
+  }
+}
+
+.animate-orb {
+  animation: float-orb 11s ease-in-out infinite;
 }
