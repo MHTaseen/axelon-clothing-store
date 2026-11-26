@@ -20,12 +20,11 @@ export default function ProductCard({ product, onAddToCart, onTextAdmin, compact
 
   return (
     <div
-      className={`group flex flex-col rounded-2xl glass-card transition-all duration-300 hover:-translate-y-1.5 overflow-hidden ${
-        compact ? 'w-full' : 'w-[245px] xs:w-[265px] sm:w-[285px] shrink-0 snap-start'
-      }`}
+      className={`group flex flex-col rounded-2xl glass-card transition-all duration-300 hover:-translate-y-1.5 overflow-hidden ${compact ? 'w-full' : 'w-[245px] xs:w-[265px] sm:w-[285px] shrink-0 snap-start'
+        }`}
     >
       {/* Multi-photo Product Image Frame */}
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-200/70">
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-100/80">
         {images[imgIndex] ? (
           <img
             src={images[imgIndex]}
@@ -33,13 +32,13 @@ export default function ProductCard({ product, onAddToCart, onTextAdmin, compact
             className="h-full w-full object-cover object-top group-hover:scale-105 transition duration-700"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-xs text-[#0F2557]/60">
+          <div className="flex h-full w-full items-center justify-center text-xs text-[#9A6B3B]">
             No Photo
           </div>
         )}
 
         {/* Subtle Top Glass Sheen */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0F2557]/25 via-transparent to-white/35" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#1A202C]/18 via-transparent to-white/40" />
 
         {/* Photo Switcher Arrows if multiple photos were uploaded */}
         {images.length > 1 && (
@@ -50,7 +49,7 @@ export default function ProductCard({ product, onAddToCart, onTextAdmin, compact
                 e.stopPropagation();
                 setImgIndex((prev) => (prev - 1 + images.length) % images.length);
               }}
-              className="absolute left-2 top-1/2 -translate-y-1/2 h-7 w-7 flex items-center justify-center rounded-full glass-navy text-[#F2D5B1] hover:bg-[#D4A876] hover:text-[#060F24] transition"
+              className="absolute left-2 top-1/2 -translate-y-1/2 h-7 w-7 flex items-center justify-center rounded-full glass-biscuit text-white hover:bg-white hover:text-[#8A5D30] transition"
               aria-label="Previous photo"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -61,7 +60,7 @@ export default function ProductCard({ product, onAddToCart, onTextAdmin, compact
                 e.stopPropagation();
                 setImgIndex((prev) => (prev + 1) % images.length);
               }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 flex items-center justify-center rounded-full glass-navy text-[#F2D5B1] hover:bg-[#D4A876] hover:text-[#060F24] transition"
+              className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 flex items-center justify-center rounded-full glass-biscuit text-white hover:bg-white hover:text-[#8A5D30] transition"
               aria-label="Next photo"
             >
               <ChevronRight className="h-4 w-4" />
@@ -70,9 +69,8 @@ export default function ProductCard({ product, onAddToCart, onTextAdmin, compact
               {images.map((_, i) => (
                 <span
                   key={i}
-                  className={`h-1.5 rounded-full transition-all ${
-                    i === imgIndex ? 'w-4 bg-[#E5C193]' : 'w-1.5 bg-white/50'
-                  }`}
+                  className={`h-1.5 rounded-full transition-all ${i === imgIndex ? 'w-4 bg-[#E8C9A4]' : 'w-1.5 bg-white/70'
+                    }`}
                 />
               ))}
             </div>
@@ -80,25 +78,25 @@ export default function ProductCard({ product, onAddToCart, onTextAdmin, compact
         )}
       </div>
 
-      {/* Product Info + Admin-Selected Visible Fields (Shiny Silver Crystal Interior) */}
+      {/* Product Info + Admin-Selected Visible Fields (Whitish-Silver Crystal Interior) */}
       <div className="flex flex-1 flex-col justify-between p-4 space-y-3">
         <div className="space-y-2">
-          <h3 className="font-serif text-lg font-bold text-silver-chrome leading-snug line-clamp-2 drop-shadow-[0_1px_0_rgba(255,255,255,0.8)]">
+          <h3 className="font-serif text-lg font-bold text-silver-chrome leading-snug line-clamp-2">
             {product.name}
           </h3>
 
-          <div className="inline-block rounded-full glass-silver px-3 py-0.5 text-sm font-extrabold text-[#0F2557]">
+          <div className="inline-block rounded-full glass-silver px-3 py-0.5 text-sm font-bold text-[#2B3242]">
             TK {Number(product.price || 0).toLocaleString()}
           </div>
 
           {visibleFields.length > 0 && (
-            <div className="space-y-1 pt-2 border-t border-[#0F2557]/15">
+            <div className="space-y-1 pt-2 border-t border-[#8A93AB]/25">
               {visibleFields.map((field) => (
                 <div key={field.id || field.label} className="flex items-start justify-between gap-2 text-[11px]">
-                  <span className="font-bold uppercase tracking-wider text-[#2E4670] shrink-0">
+                  <span className="font-semibold uppercase tracking-wider text-[#55607A] shrink-0">
                     {field.label}:
                   </span>
-                  <span className="text-[#0B1B3B] font-semibold text-right break-words">
+                  <span className="text-[#2B3242] font-semibold text-right break-words">
                     {field.value}
                   </span>
                 </div>
@@ -108,23 +106,23 @@ export default function ProductCard({ product, onAddToCart, onTextAdmin, compact
         </div>
 
         {/* Quantity Selector + Two Mandatory Buttons: Add to Cart & Text Admin */}
-        <div className="space-y-2.5 pt-2 border-t border-[#0F2557]/15">
+        <div className="space-y-2.5 pt-2 border-t border-[#8A93AB]/25">
           <div className="flex items-center justify-between text-[11px]">
-            <span className="font-bold uppercase tracking-wider text-[#2E4670]">Quantity:</span>
+            <span className="font-semibold uppercase tracking-wider text-[#55607A]">Quantity:</span>
             <div className="flex items-center rounded-lg glass-silver">
               <button
                 type="button"
                 onClick={() => setQty((q) => Math.max(1, q - 1))}
-                className="px-2 py-1 text-[#0F2557] hover:bg-[#0F2557]/10 transition rounded-l-lg"
+                className="px-2 py-1 text-[#2B3242] hover:bg-[#8A93AB]/20 transition rounded-l-lg"
                 aria-label="Decrease quantity"
               >
                 <Minus className="h-3 w-3" />
               </button>
-              <span className="px-2.5 text-xs font-extrabold text-[#0B1B3B]">{qty}</span>
+              <span className="px-2.5 text-xs font-bold text-[#2B3242]">{qty}</span>
               <button
                 type="button"
                 onClick={() => setQty((q) => q + 1)}
-                className="px-2 py-1 text-[#0F2557] hover:bg-[#0F2557]/10 transition rounded-r-lg"
+                className="px-2 py-1 text-[#2B3242] hover:bg-[#8A93AB]/20 transition rounded-r-lg"
                 aria-label="Increase quantity"
               >
                 <Plus className="h-3 w-3" />
@@ -136,7 +134,7 @@ export default function ProductCard({ product, onAddToCart, onTextAdmin, compact
             <button
               type="button"
               onClick={() => onAddToCart(product, qty)}
-              className="inline-flex items-center justify-center gap-1 rounded-xl glass-gold-btn py-2.5 px-2 text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[#060F24] transition"
+              className="inline-flex items-center justify-center gap-1 rounded-xl glass-gold-btn py-2.5 px-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-shiny-white transition"
             >
               <ShoppingBag className="h-3.5 w-3.5 shrink-0" />
               <span>Add to Cart</span>
@@ -145,7 +143,7 @@ export default function ProductCard({ product, onAddToCart, onTextAdmin, compact
             <button
               type="button"
               onClick={() => onTextAdmin(product)}
-              className="inline-flex items-center justify-center gap-1 rounded-xl glass-silver py-2.5 px-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#0F2557] transition"
+              className="inline-flex items-center justify-center gap-1 rounded-xl glass-silver py-2.5 px-2 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#2B3242] transition"
             >
               <MessageSquare className="h-3.5 w-3.5 shrink-0" />
               <span>Text Admin</span>

@@ -32,24 +32,24 @@ export default function PublicSearchModal({ isOpen, onClose, onAddToCart, onText
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#060F24]/75 p-3 sm:p-6 backdrop-blur-sm">
-      <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden bg-white shadow-2xl border border-[#B8844E]/60">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1A202C]/60 p-3 sm:p-6 backdrop-blur-sm">
+      <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden bg-white shadow-2xl border border-[#A3AABE]/70">
         {/* Search Input Header */}
-        <div className="flex items-center gap-3 bg-[#0F2557] px-5 py-4 text-white border-b border-[#B8844E]/40 shrink-0">
-          <Search className="h-5 w-5 text-[#F2D5B1] shrink-0" />
+        <div className="flex items-center gap-3 glass-biscuit px-5 py-4 text-white border-x-0 border-t-0 border-b border-white/30 shrink-0">
+          <Search className="h-5 w-5 text-[#F7E5CA] shrink-0" />
           <input
             type="text"
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search any product by name, size, color, category, or section..."
-            className="flex-1 bg-transparent text-sm sm:text-base text-white placeholder:text-white/60 focus:outline-none"
+            className="flex-1 bg-transparent text-sm sm:text-base text-white placeholder:text-white/75 focus:outline-none"
           />
           {query && (
             <button
               type="button"
               onClick={() => setQuery('')}
-              className="text-xs text-[#F2D5B1] hover:underline shrink-0"
+              className="text-xs font-bold text-[#F7E5CA] hover:underline shrink-0"
             >
               Clear
             </button>
@@ -57,7 +57,7 @@ export default function PublicSearchModal({ isOpen, onClose, onAddToCart, onText
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-full text-white/80 hover:bg-white/10 hover:text-white shrink-0"
+            className="p-1.5 rounded-full text-white hover:bg-white/20 shrink-0"
           >
             <X className="h-5 w-5" />
           </button>
@@ -65,7 +65,7 @@ export default function PublicSearchModal({ isOpen, onClose, onAddToCart, onText
 
         {/* Results */}
         <div className="flex-1 overflow-y-auto p-5 axelon-glass-canvas">
-          <div className="mb-4 text-xs font-bold uppercase tracking-wider text-[#0F2557]">
+          <div className="mb-4 text-xs font-bold uppercase tracking-wider text-[#2B3242]">
             {loading
               ? 'Searching...'
               : query.trim()
@@ -74,7 +74,7 @@ export default function PublicSearchModal({ isOpen, onClose, onAddToCart, onText
           </div>
 
           {results.length === 0 && !loading ? (
-            <div className="py-16 text-center text-sm font-medium text-[#243B64]">
+            <div className="py-16 text-center text-sm font-medium text-[#55607A]">
               No matching products found. Try another keyword.
             </div>
           ) : (

@@ -49,17 +49,17 @@ function ProductTrainSection({ section, onSeeAll, onAddToCart, onTextAdmin }) {
   return (
     <section
       id={section.id}
-      className="w-full py-12 sm:py-16 border-b border-[#0F2557]/15"
+      className="w-full py-12 sm:py-16 border-b border-[#8A93AB]/30"
     >
       <div className="w-full px-4 sm:px-8 lg:px-12">
         {/* Section Heading + Small Subheading + "See Products" Link + Train Arrows */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-          <div className="relative pl-4 border-l-4 border-[#0F2557] shadow-[-4px_0_16px_rgba(15,37,87,0.18)]">
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-silver-chrome tracking-wide drop-shadow-[0_1px_0_rgba(255,255,255,0.85)]">
+          <div className="relative pl-4 border-l-4 border-[#8A93AB] shadow-[-4px_0_16px_rgba(138,147,171,0.35)]">
+            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-silver-chrome tracking-wide">
               {section.name}
             </h2>
             {section.subheading && (
-              <p className="text-xs sm:text-sm text-[#243B64] font-medium mt-1">
+              <p className="text-xs sm:text-sm text-[#55607A] font-medium mt-1">
                 {section.subheading}
               </p>
             )}
@@ -69,7 +69,7 @@ function ProductTrainSection({ section, onSeeAll, onAddToCart, onTextAdmin }) {
             <button
               type="button"
               onClick={() => onSeeAll(section)}
-              className="rounded-full glass-silver px-5 py-2 text-xs font-extrabold uppercase tracking-[0.16em] text-[#0F2557] transition"
+              className="rounded-full glass-silver px-5 py-2 text-xs font-bold uppercase tracking-[0.16em] text-[#2B3242] hover:text-black transition"
             >
               See Products ({products.length})
             </button>
@@ -79,7 +79,7 @@ function ProductTrainSection({ section, onSeeAll, onAddToCart, onTextAdmin }) {
                 <button
                   type="button"
                   onClick={() => slideTrain(-1)}
-                  className="p-2 rounded-full glass-silver text-[#0F2557] hover:text-[#06122E] transition"
+                  className="p-2 rounded-full glass-silver text-[#2B3242] hover:text-black transition"
                   aria-label="Slide Left"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -87,7 +87,7 @@ function ProductTrainSection({ section, onSeeAll, onAddToCart, onTextAdmin }) {
                 <button
                   type="button"
                   onClick={() => slideTrain(1)}
-                  className="p-2 rounded-full glass-silver text-[#0F2557] hover:text-[#06122E] transition"
+                  className="p-2 rounded-full glass-silver text-[#2B3242] hover:text-black transition"
                   aria-label="Slide Right"
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -99,7 +99,7 @@ function ProductTrainSection({ section, onSeeAll, onAddToCart, onTextAdmin }) {
 
         {/* Horizontal Sliding "Train Buggies" Product Track */}
         {products.length === 0 ? (
-          <div className="rounded-2xl glass-navy py-12 text-center text-xs text-slate-300">
+          <div className="rounded-2xl glass-biscuit py-12 text-center text-xs font-semibold text-shiny-white">
             No products in "{section.name}" yet.
           </div>
         ) : (
@@ -397,25 +397,25 @@ export default function App() {
   const activeCategoryPage = sections.find((s) => s.id === activeCategoryPageId) || null;
 
   return (
-    <div className="min-h-screen axelon-glass-canvas text-[#0B1B3B] flex flex-col">
-      {/* 1. Full-Width Topmost Admin Announcement Bar (Frosted Navy & Silver Glass) */}
+    <div className="min-h-screen axelon-glass-canvas text-[#2B3242] flex flex-col">
+      {/* 1. Full-Width Topmost Admin Announcement Bar (Shiny #A3AABE Glass — Matching Main Navbar) */}
       {announcement?.enabled !== false && (
         <div
           role="banner"
-          className="w-full glass-navy px-4 sm:px-8 lg:px-12 py-2.5 text-center border-x-0 border-t-0"
+          className="w-full glass-biscuit px-4 sm:px-8 lg:px-12 py-2.5 text-center border-x-0 border-t-0 border-b border-white/30"
         >
-          <p className="w-full text-[11px] sm:text-xs font-semibold tracking-[0.18em] uppercase text-slate-100 leading-relaxed">
+          <p className="w-full text-[11px] sm:text-xs font-semibold tracking-[0.18em] uppercase text-shiny-white leading-relaxed">
             {announcement?.message}
           </p>
         </div>
       )}
 
-      {/* 2. Main Navigation Bar (Frosted Biscuit Glass | Zero-Overlap Responsive Layout) */}
+      {/* 2. Main Navigation Bar (Shiny #A3AABE Glass | Zero-Overlap Responsive Layout) */}
       {navbar?.enabled !== false && (
-        <header className="sticky top-0 z-40 w-full glass-biscuit">
+        <header className="sticky top-0 z-40 w-full glass-biscuit border-x-0 border-t-0">
           {/* Row 1: Logo Left | "Our Collections" Center (md+) | Utility Icons Right */}
           <div className="flex md:grid md:grid-cols-3 items-center justify-between w-full px-3 sm:px-6 lg:px-12 h-14 sm:h-16 md:h-20 gap-2">
-            {/* Leftmost: AXELON Name & Logo (Click returns to Homepage) */}
+            {/* Leftmost: AXELON Name & Logo (Intact — Click returns to Homepage) */}
             <div className="flex items-center justify-start min-w-0 shrink-0">
               <button
                 type="button"
@@ -443,15 +443,15 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setShowCollectionsDropdown((prev) => !prev)}
-                className="inline-flex items-center gap-1 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-navy-950 border-b-2 border-transparent hover:border-navy-950 transition whitespace-nowrap"
+                className="inline-flex items-center gap-1 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-shiny-white border-b-2 border-transparent hover:text-[#F6E4C8] hover:border-[#F6E4C8] transition whitespace-nowrap"
               >
                 <span>{navbar?.centerButtonLabel || 'Our Collections'}</span>
                 <ChevronDown className="h-3.5 w-3.5 shrink-0" />
               </button>
 
               {showCollectionsDropdown && (
-                <div className="absolute top-full left-1/2 -translate-x-1/2 w-64 bg-white border border-[#B8844E]/60 shadow-2xl py-2 z-50">
-                  <div className="px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-widest text-[#9A6B3B] border-b border-[#DBBB97]/40">
+                <div className="absolute top-full left-1/2 -translate-x-1/2 w-64 bg-white border border-[#A3AABE]/70 shadow-2xl py-2 z-50">
+                  <div className="px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-widest text-[#9A6B3B] border-b border-[#E5C9A8]/50">
                     Browse Categories
                   </div>
                   <button
@@ -461,13 +461,13 @@ export default function App() {
                       setShowCollectionsDropdown(false);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="flex w-full items-center justify-between px-4 py-2.5 text-left text-xs font-bold text-[#0F2557] hover:bg-[#FBF6F0] transition"
+                    className="flex w-full items-center justify-between px-4 py-2.5 text-left text-xs font-bold text-[#8A5D30] hover:bg-[#FAF3EB] transition"
                   >
                     <span>All Products (Our Collection)</span>
-                    <span className="text-[10px] font-semibold text-[#9A6B3B]">{allProducts.length}</span>
+                    <span className="text-[10px] font-semibold text-[#B8844E]">{allProducts.length}</span>
                   </button>
                   {adminCategories.length === 0 ? (
-                    <div className="px-4 py-2.5 text-[11px] text-navy-500">
+                    <div className="px-4 py-2.5 text-[11px] text-[#9A6B3B]">
                       No categories created yet.
                     </div>
                   ) : (
@@ -480,7 +480,7 @@ export default function App() {
                           setShowCollectionsDropdown(false);
                           window.scrollTo({ top: 0, behavior: 'smooth' });
                         }}
-                        className="flex w-full items-center justify-between px-4 py-2.5 text-left text-xs font-semibold text-[#0F2557] hover:bg-[#0F2557] hover:text-[#F2D5B1] transition"
+                        className="flex w-full items-center justify-between px-4 py-2.5 text-left text-xs font-semibold text-[#8A5D30] hover:bg-[#A3AABE] hover:text-white transition"
                       >
                         <span className="truncate">{cat.name}</span>
                         <span className="text-[10px] opacity-80 shrink-0 ml-2">
@@ -501,7 +501,7 @@ export default function App() {
                   onClick={() => handleOpenMessenger(null)}
                   title={currentUser ? 'Messages (Live Chat)' : 'Sign In to Message Admin'}
                   aria-label="Messages"
-                  className="p-2 rounded-full text-navy-950 hover:bg-navy-950/10 transition"
+                  className="p-2 rounded-full text-white hover:text-[#F6E4C8] hover:bg-white/20 transition"
                 >
                   <MessageSquare className="h-[18px] w-[18px] sm:h-5 sm:w-5 stroke-[1.85]" />
                 </button>
@@ -517,13 +517,13 @@ export default function App() {
                     }}
                     title="Reg / Sign In"
                     aria-label="Reg / Sign In"
-                    className="p-2 rounded-full text-navy-950 hover:bg-navy-950/10 transition"
+                    className="p-2 rounded-full text-white hover:text-[#F6E4C8] hover:bg-white/20 transition"
                   >
                     <User className="h-[18px] w-[18px] sm:h-5 sm:w-5 stroke-[1.85]" />
                   </button>
                 ) : (
                   <div className="flex items-center gap-1">
-                    <span className="hidden lg:inline-block text-[11px] font-bold text-[#0F2557] max-w-[110px] truncate">
+                    <span className="hidden lg:inline-block text-[11px] font-bold text-shiny-white max-w-[110px] truncate">
                       {currentUser.fullName}
                     </span>
                     <button
@@ -531,7 +531,7 @@ export default function App() {
                       onClick={() => setIsAccountOpen(true)}
                       title="Account Settings (change password / email)"
                       aria-label="Account Settings"
-                      className="p-2 rounded-full text-[#0F2557] hover:bg-navy-950/10 transition"
+                      className="p-2 rounded-full text-white hover:text-[#F6E4C8] hover:bg-white/20 transition"
                     >
                       <UserCog className="h-[18px] w-[18px] stroke-[2]" />
                     </button>
@@ -540,7 +540,7 @@ export default function App() {
                       onClick={handleSignOut}
                       title="Sign Out"
                       aria-label="Sign Out"
-                      className="p-2 rounded-full text-red-700 hover:bg-red-600 hover:text-white transition"
+                      className="p-2 rounded-full text-[#F6E4C8] hover:bg-red-600 hover:text-white transition"
                     >
                       <LogOut className="h-[18px] w-[18px] stroke-[2]" />
                     </button>
@@ -554,7 +554,7 @@ export default function App() {
                   onClick={() => setIsSearchOpen(true)}
                   title="Search Products"
                   aria-label="Search"
-                  className="p-2 rounded-full text-navy-950 hover:bg-navy-950/10 transition"
+                  className="p-2 rounded-full text-white hover:text-[#F6E4C8] hover:bg-white/20 transition"
                 >
                   <Search className="h-[18px] w-[18px] sm:h-5 sm:w-5 stroke-[1.85]" />
                 </button>
@@ -566,11 +566,11 @@ export default function App() {
                   onClick={() => setIsCartOpen(true)}
                   title="Cart & Booking Slip"
                   aria-label="Cart"
-                  className="relative p-2 rounded-full text-navy-950 hover:bg-navy-950/10 transition"
+                  className="relative p-2 rounded-full text-white hover:text-[#F6E4C8] hover:bg-white/20 transition"
                 >
                   <ShoppingBag className="h-[18px] w-[18px] sm:h-5 sm:w-5 stroke-[1.85]" />
                   {totalCartItems > 0 && (
-                    <span className="absolute top-0.5 right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#0F2557] px-1 text-[10px] font-bold text-[#F2D5B1]">
+                    <span className="absolute top-0.5 right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#B8844E] px-1 text-[10px] font-bold text-white shadow">
                       {totalCartItems}
                     </span>
                   )}
@@ -580,19 +580,19 @@ export default function App() {
           </div>
 
           {/* Mobile Row 2 (< md): Clean Dedicated Centered "Our Collections" Bar — Zero Overlap on Any Phone */}
-          <div className="flex md:hidden relative items-center justify-center border-t border-navy-950/10 py-1.5 px-3">
+          <div className="flex md:hidden relative items-center justify-center border-t border-white/25 py-1.5 px-3">
             <button
               type="button"
               onClick={() => setShowCollectionsDropdown((prev) => !prev)}
-              className="inline-flex items-center gap-1.5 px-4 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-navy-950"
+              className="inline-flex items-center gap-1.5 px-4 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-shiny-white"
             >
               <span>{navbar?.centerButtonLabel || 'Our Collections'}</span>
               <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showCollectionsDropdown ? 'rotate-180' : ''}`} />
             </button>
 
             {showCollectionsDropdown && (
-              <div className="absolute top-full left-1/2 -translate-x-1/2 w-[90vw] max-w-xs bg-white border border-[#B8844E]/60 shadow-2xl py-2 z-50">
-                <div className="px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-widest text-[#9A6B3B] border-b border-[#DBBB97]/40">
+              <div className="absolute top-full left-1/2 -translate-x-1/2 w-[90vw] max-w-xs bg-white border border-[#A3AABE]/70 shadow-2xl py-2 z-50">
+                <div className="px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-widest text-[#9A6B3B] border-b border-[#E5C9A8]/50">
                   Browse Categories
                 </div>
                 <button
@@ -602,13 +602,13 @@ export default function App() {
                     setShowCollectionsDropdown(false);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="flex w-full items-center justify-between px-4 py-2.5 text-left text-xs font-bold text-[#0F2557] hover:bg-[#FBF6F0] transition"
+                  className="flex w-full items-center justify-between px-4 py-2.5 text-left text-xs font-bold text-[#8A5D30] hover:bg-[#FAF3EB] transition"
                 >
                   <span>All Products (Our Collection)</span>
-                  <span className="text-[10px] font-semibold text-[#9A6B3B]">{allProducts.length}</span>
+                  <span className="text-[10px] font-semibold text-[#B8844E]">{allProducts.length}</span>
                 </button>
                 {adminCategories.length === 0 ? (
-                  <div className="px-4 py-2.5 text-[11px] text-navy-500">
+                  <div className="px-4 py-2.5 text-[11px] text-[#9A6B3B]">
                     No categories created yet.
                   </div>
                 ) : (
@@ -621,7 +621,7 @@ export default function App() {
                         setShowCollectionsDropdown(false);
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      className="flex w-full items-center justify-between px-4 py-2.5 text-left text-xs font-semibold text-[#0F2557] hover:bg-[#0F2557] hover:text-[#F2D5B1] transition"
+                      className="flex w-full items-center justify-between px-4 py-2.5 text-left text-xs font-semibold text-[#8A5D30] hover:bg-[#A3AABE] hover:text-white transition"
                     >
                       <span className="truncate">{cat.name}</span>
                       <span className="text-[10px] opacity-80 shrink-0 ml-2">
@@ -651,7 +651,7 @@ export default function App() {
       {activeCategoryPage ? (
         <main className="flex-1 w-full px-4 sm:px-8 lg:px-12 py-10 sm:py-14">
           {/* Back Button + Category Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-8 border-b border-[#0F2557]/15">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-8 border-b border-[#8A93AB]/30">
             <div className="space-y-1">
               <button
                 type="button"
@@ -659,28 +659,28 @@ export default function App() {
                   setActiveCategoryPageId(null);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className="inline-flex items-center gap-1.5 rounded-full glass-gold-btn px-5 py-2 text-xs font-extrabold uppercase tracking-wider text-[#060F24] transition mb-3"
+                className="inline-flex items-center gap-1.5 rounded-full glass-gold-btn px-5 py-2 text-xs font-bold uppercase tracking-wider text-shiny-white transition mb-3"
               >
                 <ArrowLeft className="h-4 w-4" />
                 <span>Back to Home</span>
               </button>
-              <h1 className="font-serif text-3xl sm:text-5xl font-bold text-silver-chrome drop-shadow-[0_1px_0_rgba(255,255,255,0.85)]">
+              <h1 className="font-serif text-3xl sm:text-5xl font-bold text-silver-chrome">
                 {activeCategoryPage.name}
               </h1>
               {activeCategoryPage.subheading && (
-                <p className="text-xs sm:text-sm text-[#243B64] font-medium">
+                <p className="text-xs sm:text-sm text-[#55607A] font-medium">
                   {activeCategoryPage.subheading}
                 </p>
               )}
             </div>
-            <div className="rounded-full glass-silver text-xs font-extrabold uppercase tracking-widest text-[#0F2557] px-5 py-2.5 self-start sm:self-end">
+            <div className="rounded-full glass-silver text-xs font-bold uppercase tracking-widest text-[#2B3242] px-5 py-2.5 self-start sm:self-end">
               {(activeCategoryPage.resolvedProducts || []).length} Product(s)
             </div>
           </div>
 
           {/* All Products of This Category in Responsive Grid (With Add to Cart + Quantity + Text Admin) */}
           {(activeCategoryPage.resolvedProducts || []).length === 0 ? (
-            <div className="rounded-2xl glass-navy py-16 text-center text-sm text-[#E5C193]">
+            <div className="rounded-2xl glass-biscuit py-16 text-center text-sm font-semibold text-shiny-white">
               No products have been added to "{activeCategoryPage.name}" yet.
             </div>
           ) : (
@@ -699,46 +699,44 @@ export default function App() {
         </main>
       ) : (
         <>
-          {/* 3. Triple-Thickness (+30%) Liquid Glass Brand Showcase Banner */}
+          {/* 3. Open Brand Showcase Banner (Directly on Shiny White-Silver Canvas — No Box, AXELON Intact) */}
           {brandBanner?.enabled !== false && (
             <section
               id="top"
               className="relative overflow-hidden w-full h-[230px] sm:h-[320px] flex items-center justify-center px-6"
             >
-              {/* Floating Ambient Shiny Silver, Gold & Subtle Navy Glass Orbs */}
-              <div className="animate-orb pointer-events-none absolute -top-12 left-[12%] h-64 w-64 rounded-full bg-white/80 blur-3xl" />
-              <div className="animate-orb pointer-events-none absolute top-8 left-[45%] h-48 w-48 rounded-full bg-[#D4A876]/25 blur-3xl" />
-              <div className="animate-orb pointer-events-none absolute -bottom-16 right-[14%] h-64 w-64 rounded-full bg-[#1E3A8A]/18 blur-3xl" />
+              {/* Floating Ambient Shiny White-Silver & #A3AABE Glass Orbs */}
+              <div className="animate-orb pointer-events-none absolute -top-12 left-[12%] h-64 w-64 rounded-full bg-white/95 blur-3xl" />
+              <div className="animate-orb pointer-events-none absolute top-8 left-[45%] h-52 w-52 rounded-full bg-white/80 blur-3xl" />
+              <div className="animate-orb pointer-events-none absolute -bottom-16 right-[14%] h-64 w-64 rounded-full bg-[#A3AABE]/25 blur-3xl" />
 
-              {/* Frosted Biscuit-Silver Glass Floating Plaque */}
-              <div className="relative z-10 rounded-3xl glass-biscuit px-10 sm:px-20 py-8 sm:py-12 flex items-center justify-center border border-white/90 shadow-[0_20px_50px_rgba(15,37,87,0.18),0_0_36px_rgba(255,255,255,0.75)]">
-                <img
-                  src={brandBanner?.logoUrl || '/images/axelon-logo.png'}
-                  alt={brandBanner?.brandName || 'AXELON'}
-                  className="h-12 sm:h-20 md:h-24 w-auto max-w-[75vw] object-contain drop-shadow-[0_4px_14px_rgba(15,37,87,0.22)]"
-                />
-              </div>
+              {/* Direct AXELON Brand Logo on Homepage (No Box — Intact) */}
+              <img
+                src={brandBanner?.logoUrl || '/images/axelon-logo.png'}
+                alt={brandBanner?.brandName || 'AXELON'}
+                className="relative z-10 h-14 sm:h-22 md:h-28 w-auto max-w-[78vw] object-contain drop-shadow-[0_6px_18px_rgba(74,82,104,0.18)]"
+              />
             </section>
           )}
 
-          {/* 4. News Bulletin Ticker Section (Frosted Smoked-Navy & Silver Crystal Strip) */}
+          {/* 4. News Bulletin Ticker Section (Shiny #A3AABE Glass Strip with Shiny White & Biscuit Text) */}
           {bulletin?.enabled !== false && (bulletin?.items || []).length > 0 && (
             <section
               aria-label="News Bulletin"
-              className="w-full glass-navy border-x-0 overflow-hidden flex items-center"
+              className="w-full glass-biscuit border-x-0 overflow-hidden flex items-center"
             >
               <div className="flex-1 overflow-hidden py-3">
                 <div className="animate-bulletin flex items-center">
                   {[...(bulletin?.items || []), ...(bulletin?.items || [])].map((item, idx) => (
                     <div
                       key={idx}
-                      className="inline-flex items-center gap-3 px-6 text-xs sm:text-[13px] font-medium tracking-wide text-slate-100 whitespace-nowrap"
+                      className="inline-flex items-center gap-3 px-6 text-xs sm:text-[13px] font-semibold tracking-wide text-shiny-white whitespace-nowrap"
                     >
                       <span
                         className={`h-2 w-2 rotate-45 shrink-0 ${
                           idx % 2 === 0
-                            ? 'bg-slate-200 shadow-[0_0_8px_rgba(241,245,249,0.9)]'
-                            : 'bg-[#E5C193] shadow-[0_0_8px_rgba(229,193,147,0.85)]'
+                            ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.95)]'
+                            : 'bg-[#F3D8B6] shadow-[0_0_8px_rgba(243,216,182,0.85)]'
                         }`}
                       />
                       <span>{item}</span>
@@ -764,11 +762,11 @@ export default function App() {
         </>
       )}
 
-      {/* 6. Dynamic Admin-Controlled Footer Section (Frosted Crystal Navy Glass) */}
+      {/* 6. Dynamic Admin-Controlled Footer Section (Shiny #A3AABE Glass with Shiny White & Biscuit Text) */}
       {footer?.enabled !== false && (
-        <footer className="w-full glass-navy border-x-0 border-b-0 text-white mt-auto">
+        <footer className="w-full glass-biscuit border-x-0 border-b-0 text-white mt-auto">
           <div className="w-full px-4 sm:px-8 lg:px-12 py-12">
-            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8 pb-10 border-b border-[#B8844E]/30">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8 pb-10 border-b border-white/30">
               {/* Dynamic Footer Sections (Spread cleanly across available width; Location opens live Google Map popup) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 flex-1">
                 {(footer?.sections || []).map((sec) => {
@@ -776,7 +774,7 @@ export default function App() {
                     sec.id === 'ft-location' || (sec.title || '').toLowerCase().includes('location');
                   return (
                     <div key={sec.id} className="space-y-2.5">
-                      <h4 className="font-serif text-lg font-bold tracking-wider uppercase text-[#F2D5B1]">
+                      <h4 className="font-serif text-lg font-bold tracking-wider uppercase text-[#F7E5CA] drop-shadow-[0_1px_2px_rgba(42,50,70,0.28)]">
                         {sec.title}
                       </h4>
                       {isLocation ? (
@@ -791,16 +789,16 @@ export default function App() {
                           className="group text-left space-y-1.5"
                           title="Click to open real Google Map & Get Directions"
                         >
-                          <p className="text-xs text-white/90 group-hover:text-[#F2D5B1] leading-relaxed whitespace-pre-line break-words underline decoration-[#B8844E]/60 underline-offset-4 transition">
+                          <p className="text-xs text-shiny-white group-hover:text-[#F7E5CA] leading-relaxed whitespace-pre-line break-words underline decoration-[#F7E5CA]/70 underline-offset-4 transition">
                             {sec.content}
                           </p>
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[#D4A876] group-hover:text-white transition">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[#F7E5CA] group-hover:text-white transition">
                             <MapPin className="h-3.5 w-3.5 shrink-0" />
                             <span>View Live Google Map & Directions</span>
                           </span>
                         </button>
                       ) : (
-                        <p className="text-xs text-white/85 leading-relaxed whitespace-pre-line break-words">
+                        <p className="text-xs text-shiny-white leading-relaxed whitespace-pre-line break-words">
                           {sec.content}
                         </p>
                       )}
@@ -812,7 +810,7 @@ export default function App() {
               {/* Social Links Section ("Links") Anchored to the Rightmost Corner */}
               {footer?.showLinksSection !== false && (
                 <div className="space-y-3 shrink-0 lg:text-right lg:ml-8">
-                  <h4 className="font-serif text-lg font-bold tracking-wider uppercase text-[#F2D5B1]">
+                  <h4 className="font-serif text-lg font-bold tracking-wider uppercase text-[#F7E5CA] drop-shadow-[0_1px_2px_rgba(42,50,70,0.28)]">
                     {footer?.linksSectionTitle || 'Links'}
                   </h4>
                   <div className="flex flex-wrap items-center lg:justify-end gap-2.5">
@@ -845,7 +843,7 @@ export default function App() {
                           rel="noreferrer"
                           title={link.label}
                           aria-label={link.label}
-                          className="inline-flex items-center justify-center h-9 w-9 rounded-full border border-[#B8844E]/60 bg-[#060F24]/50 text-[#F2D5B1] hover:bg-[#B8844E] hover:text-[#060F24] transition"
+                          className="inline-flex items-center justify-center h-9 w-9 rounded-full glass-silver text-[#2B3242] hover:bg-[#55607A] hover:text-white transition"
                         >
                           {renderSocialIcon(link.icon)}
                         </a>
@@ -858,7 +856,7 @@ export default function App() {
 
             {/* Bottom Copyright Line */}
             <div className="pt-6 text-center">
-              <p className="text-xs font-semibold tracking-[0.18em] text-[#F2D5B1]">
+              <p className="text-xs font-bold tracking-[0.18em] text-[#F7E5CA] drop-shadow-[0_1px_2px_rgba(42,50,70,0.25)]">
                 {footer?.copyright || '@AXELON All rights Reserved'}
               </p>
             </div>
@@ -871,7 +869,7 @@ export default function App() {
         <button
           type="button"
           onClick={() => setIsAdminWorkspaceOpen(true)}
-          className="fixed bottom-4 right-4 z-40 inline-flex items-center gap-2 rounded-full bg-[#0F2557] border border-[#B8844E] px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-[#F2D5B1] shadow-2xl hover:bg-[#060F24] transition"
+          className="fixed bottom-4 right-4 z-40 inline-flex items-center gap-2 rounded-full bg-[#6E778E] border border-white/80 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-2xl hover:bg-[#535B70] transition"
           title="Manage Sections, Products, Fields & Booking Orders"
         >
           <SlidersHorizontal className="h-4 w-4" />
