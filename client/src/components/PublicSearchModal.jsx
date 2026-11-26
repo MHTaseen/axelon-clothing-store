@@ -65,7 +65,7 @@ export default function PublicSearchModal({ isOpen, onClose, onAddToCart, onText
 
         {/* Results */}
         <div className="flex-1 overflow-y-auto p-5 axelon-glass-canvas">
-          <div className="mb-4 text-xs font-bold uppercase tracking-wider text-[#F7DFBE]">
+          <div className="mb-4 text-xs font-bold uppercase tracking-wider text-[#0F2557]">
             {loading
               ? 'Searching...'
               : query.trim()
@@ -74,7 +74,7 @@ export default function PublicSearchModal({ isOpen, onClose, onAddToCart, onText
           </div>
 
           {results.length === 0 && !loading ? (
-            <div className="py-16 text-center text-sm text-[#E5C193]">
+            <div className="py-16 text-center text-sm font-medium text-[#243B64]">
               No matching products found. Try another keyword.
             </div>
           ) : (

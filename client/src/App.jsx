@@ -49,17 +49,17 @@ function ProductTrainSection({ section, onSeeAll, onAddToCart, onTextAdmin }) {
   return (
     <section
       id={section.id}
-      className="w-full py-12 sm:py-16 border-b border-slate-200/15"
+      className="w-full py-12 sm:py-16 border-b border-[#0F2557]/15"
     >
       <div className="w-full px-4 sm:px-8 lg:px-12">
         {/* Section Heading + Small Subheading + "See Products" Link + Train Arrows */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-          <div className="relative pl-4 border-l-4 border-slate-200/80 shadow-[-4px_0_16px_rgba(226,232,240,0.2)]">
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-silver-chrome tracking-wide drop-shadow-sm">
+          <div className="relative pl-4 border-l-4 border-[#0F2557] shadow-[-4px_0_16px_rgba(15,37,87,0.18)]">
+            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-silver-chrome tracking-wide drop-shadow-[0_1px_0_rgba(255,255,255,0.85)]">
               {section.name}
             </h2>
             {section.subheading && (
-              <p className="text-xs sm:text-sm text-slate-300 font-medium mt-1">
+              <p className="text-xs sm:text-sm text-[#243B64] font-medium mt-1">
                 {section.subheading}
               </p>
             )}
@@ -69,7 +69,7 @@ function ProductTrainSection({ section, onSeeAll, onAddToCart, onTextAdmin }) {
             <button
               type="button"
               onClick={() => onSeeAll(section)}
-              className="rounded-full glass-silver px-5 py-2 text-xs font-extrabold uppercase tracking-[0.16em] text-white transition"
+              className="rounded-full glass-silver px-5 py-2 text-xs font-extrabold uppercase tracking-[0.16em] text-[#0F2557] transition"
             >
               See Products ({products.length})
             </button>
@@ -79,7 +79,7 @@ function ProductTrainSection({ section, onSeeAll, onAddToCart, onTextAdmin }) {
                 <button
                   type="button"
                   onClick={() => slideTrain(-1)}
-                  className="p-2 rounded-full glass-silver text-slate-100 hover:text-white transition"
+                  className="p-2 rounded-full glass-silver text-[#0F2557] hover:text-[#06122E] transition"
                   aria-label="Slide Left"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -87,7 +87,7 @@ function ProductTrainSection({ section, onSeeAll, onAddToCart, onTextAdmin }) {
                 <button
                   type="button"
                   onClick={() => slideTrain(1)}
-                  className="p-2 rounded-full glass-silver text-slate-100 hover:text-white transition"
+                  className="p-2 rounded-full glass-silver text-[#0F2557] hover:text-[#06122E] transition"
                   aria-label="Slide Right"
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -397,7 +397,7 @@ export default function App() {
   const activeCategoryPage = sections.find((s) => s.id === activeCategoryPageId) || null;
 
   return (
-    <div className="min-h-screen axelon-glass-canvas text-white flex flex-col">
+    <div className="min-h-screen axelon-glass-canvas text-[#0B1B3B] flex flex-col">
       {/* 1. Full-Width Topmost Admin Announcement Bar (Frosted Navy & Silver Glass) */}
       {announcement?.enabled !== false && (
         <div
@@ -651,7 +651,7 @@ export default function App() {
       {activeCategoryPage ? (
         <main className="flex-1 w-full px-4 sm:px-8 lg:px-12 py-10 sm:py-14">
           {/* Back Button + Category Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-8 border-b border-slate-200/20">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-8 border-b border-[#0F2557]/15">
             <div className="space-y-1">
               <button
                 type="button"
@@ -664,16 +664,16 @@ export default function App() {
                 <ArrowLeft className="h-4 w-4" />
                 <span>Back to Home</span>
               </button>
-              <h1 className="font-serif text-3xl sm:text-5xl font-bold text-silver-chrome">
+              <h1 className="font-serif text-3xl sm:text-5xl font-bold text-silver-chrome drop-shadow-[0_1px_0_rgba(255,255,255,0.85)]">
                 {activeCategoryPage.name}
               </h1>
               {activeCategoryPage.subheading && (
-                <p className="text-xs sm:text-sm text-slate-300 font-medium">
+                <p className="text-xs sm:text-sm text-[#243B64] font-medium">
                   {activeCategoryPage.subheading}
                 </p>
               )}
             </div>
-            <div className="rounded-full glass-silver text-xs font-extrabold uppercase tracking-widest text-white px-5 py-2.5 self-start sm:self-end">
+            <div className="rounded-full glass-silver text-xs font-extrabold uppercase tracking-widest text-[#0F2557] px-5 py-2.5 self-start sm:self-end">
               {(activeCategoryPage.resolvedProducts || []).length} Product(s)
             </div>
           </div>
@@ -705,13 +705,13 @@ export default function App() {
               id="top"
               className="relative overflow-hidden w-full h-[230px] sm:h-[320px] flex items-center justify-center px-6"
             >
-              {/* Floating Ambient Silver, Gold & Cobalt Glass Orbs */}
-              <div className="animate-orb pointer-events-none absolute -top-12 left-[12%] h-56 w-56 rounded-full bg-slate-200/25 blur-3xl" />
+              {/* Floating Ambient Shiny Silver, Gold & Subtle Navy Glass Orbs */}
+              <div className="animate-orb pointer-events-none absolute -top-12 left-[12%] h-64 w-64 rounded-full bg-white/80 blur-3xl" />
               <div className="animate-orb pointer-events-none absolute top-8 left-[45%] h-48 w-48 rounded-full bg-[#D4A876]/25 blur-3xl" />
-              <div className="animate-orb pointer-events-none absolute -bottom-16 right-[14%] h-64 w-64 rounded-full bg-[#2453B8]/40 blur-3xl" />
+              <div className="animate-orb pointer-events-none absolute -bottom-16 right-[14%] h-64 w-64 rounded-full bg-[#1E3A8A]/18 blur-3xl" />
 
               {/* Frosted Biscuit-Silver Glass Floating Plaque */}
-              <div className="relative z-10 rounded-3xl glass-biscuit px-10 sm:px-20 py-8 sm:py-12 flex items-center justify-center border border-slate-100/75 shadow-[0_20px_60px_rgba(0,0,0,0.52),0_0_32px_rgba(226,232,240,0.18)]">
+              <div className="relative z-10 rounded-3xl glass-biscuit px-10 sm:px-20 py-8 sm:py-12 flex items-center justify-center border border-white/90 shadow-[0_20px_50px_rgba(15,37,87,0.18),0_0_36px_rgba(255,255,255,0.75)]">
                 <img
                   src={brandBanner?.logoUrl || '/images/axelon-logo.png'}
                   alt={brandBanner?.brandName || 'AXELON'}
